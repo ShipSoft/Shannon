@@ -1,0 +1,70 @@
+[workspace]
+name = "shannon"
+description = "Phlex-based reconstruction framework for the SHiP experiment"
+channels = ["https://prefix.dev/ship", "conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+# SHiP/HEP packages (prefix.dev/ship + conda-forge)
+shipgeometryservice = "*"
+phlex = ">=0.3.0"
+root = ">=6.36"
+geant4 = ">=11.3"
+pythia8 = ">=8.3"
+random123 = "*"
+libjsonnet = "*"
+
+# C++ libraries
+libboost-devel = "*"
+tbb-devel = "*"
+spdlog = "*"
+fmt = "*"
+mp-units = "*"
+ms-gsl = "*"
+
+# Build tools
+cmake = ">=3.27"
+ninja = "*"
+cxx-compiler = "*"
+
+[activation]
+scripts = ["activate.sh"]
+env = { 
+    LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/.local-deps/data-model/lib:$LD_LIBRARY_PATH",
+}
+
+[tasks]
+
+configure-datamodel = """
+cmake -S ../data-model -B build-datamodel -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/.local-deps/data-model \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+"""
+build-datamodel = { cmd = "cmake --build build-datamodel -j8", depends-on = ["configure-datamodel"] }
+install-datamodel = { cmd = "cmake --install build-datamodel", depends-on = ["build-datamodel"] }
+
+configure = { cmd = """
+cmake -S . -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DSHiPDataModel_DIR=$PIXI_PROJECT_ROOT/.local-deps/data-model/lib64/cmake/SHiPDataModel \
+    -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+""", depends-on = ["install-datamodel"] }
+
+build = { cmd = "cmake --build build -j8", depends-on = ["configure"] }
+install = { cmd = "cmake --install build", depends-on = ["build"] }
+test = { cmd = "ctest --test-dir build --output-on-failure", depends-on = ["build"] }
+smoke = { cmd = "scripts/smoke.sh", depends-on = ["build"] }
+clean = "rm -rf build"
+
+
+[feature.bench.dependencies]
+hyperfine = "*"
+just = "*"
+linux-perf = "*"
+
+[environments]
+default = { solve-group = "default" }
+bench = { features = ["bench"], solve-group = "default" }
