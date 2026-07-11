@@ -1,6 +1,6 @@
-# Contributing to trout
+# Contributing to Shannon
 
-Thank you for your interest in contributing to trout! As part of the SHiP Collaboration, we follow a set of standards to ensure code quality and maintainability.
+Thank you for your interest in contributing to Shannon! As part of the SHiP Collaboration, we follow a set of standards to ensure code quality and maintainability.
 
 ## Development Workflow
 

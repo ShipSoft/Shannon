@@ -1,11 +1,12 @@
 [workspace]
 name = "shannon"
-description = "Phlex-based reconstruction framework for the SHiP experiment"
+description = "Phlex-based digitisation framework for the SHiP experiment"
 channels = ["https://prefix.dev/ship", "conda-forge"]
 platforms = ["linux-64"]
 
 [dependencies]
 # SHiP/HEP packages (prefix.dev/ship + conda-forge)
+shipdatamodel="*"
 shipgeometryservice = "*"
 phlex = ">=0.3.0"
 root = ">=6.36"

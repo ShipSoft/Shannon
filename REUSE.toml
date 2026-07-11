@@ -1,7 +1,7 @@
 version = 1
-SPDX-PackageName = "trout"
+SPDX-PackageName = "shannon"
 SPDX-PackageSupplier = "CERN for the benefit of the SHiP Collaboration"
-SPDX-PackageDownloadLocation = "https://github.com/ShipSoft/trout"
+SPDX-PackageDownloadLocation = "https://github.com/ShipSoft/Shannon"
 
 [[annotations]]
 path = "**"
