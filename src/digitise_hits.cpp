@@ -25,7 +25,6 @@ using namespace phlex;
 std::random_device rd{};
 std::mt19937 rng{rd()};
 
-
 using DigitisedHit = std::variant<
     ::SHiP::StrawTubesHit,
     ::SHiP::CaloHit,
@@ -76,45 +75,29 @@ public:
 
 
     [[nodiscard]]
-    DigitisedHits operator()(
-        std::vector<::SHiP::SimHit> const& sim_hits)
+    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits)
     {
         DigitisedHits result;
 
         for (auto const& sim_hit : sim_hits) {
             auto hit = digitise(sim_hit);
-
-            std::visit(
-                [&result](auto&& concrete_hit) {
-                    using Hit = std::remove_cvref_t<
-                        decltype(concrete_hit)>;
-
-                    std::get<std::vector<Hit>>(result)
-                        .push_back(
-                            std::forward<decltype(concrete_hit)>(
-                                concrete_hit));
-                },
-                std::move(hit));
+            std::visit([&result](auto&& concrete_hit) {
+                using Hit = std::remove_cvref_t<decltype(concrete_hit)>;
+                std::get<std::vector<Hit>>(result).push_back(std::forward<decltype(concrete_hit)>(concrete_hit));
+            },std::move(hit));
         }
-
         return result;
     }
 
     [[nodiscard]]
     DigitisedHit digitise(::SHiP::SimHit const& hit)
     {
-        auto const id =
-            static_cast<SHiP::DetectorID>(hit.detectorId);
-
+        auto const id = static_cast<SHiP::DetectorID>(hit.detectorId);
         auto const it = digitisers_.find(id);
 
         if (it == digitisers_.end()) {
-            throw std::runtime_error{
-                "No digitiser registered for detector ID "
-                + std::to_string(hit.detectorId)
-            };
+            throw std::runtime_error{"No digitiser registered for detector ID " + std::to_string(hit.detectorId);
         }
-
         return it->second(hit);
     }
 
@@ -128,7 +111,6 @@ private:
 
     std::unordered_map<SHiP::DetectorID, DigitiseFunction> digitisers_;
 };
-
 
 PHLEX_REGISTER_ALGORITHMS(m, config)
 {
