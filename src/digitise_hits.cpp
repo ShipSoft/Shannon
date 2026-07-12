@@ -26,20 +26,18 @@ std::random_device rd{};
 std::mt19937 rng{rd()};
 
 using DigitisedHit = std::variant<
+    ::SHiP::UBTHit,
+    ::SHiP::SBTHit,
     ::SHiP::StrawTubesHit,
     ::SHiP::CaloHit,
-    ::SHiP::TimeDetHit,
-    ::SHiP::UBTHit,
-    ::SHiP::SBTHit
->;
+    ::SHiP::TimeDetHit >;
 
 using DigitisedHits = std::tuple<
+    std::vector<::SHiP::UBTHit>,
+    std::vector<::SHiP::SBTHit>,
     std::vector<::SHiP::StrawTubesHit>,
     std::vector<::SHiP::CaloHit>,
-    std::vector<::SHiP::TimeDetHit>,
-    std::vector<::SHiP::UBTHit>,
-    std::vector<::SHiP::SBTHit>
->;
+    std::vector<::SHiP::TimeDetHit> >;
 
 using DigitiseFunction = std::function<DigitisedHit(::SHiP::SimHit const&)>;
 
@@ -69,16 +67,13 @@ public:
     template<typename Detector>
     void register_detector(SHiP::DetectorID id, Detector& detector)
     {
-        digitisers_.emplace(id, [&detector](::SHiP::SimHit const& hit) -> DigitisedHit {
-            return detector.digitise(hit);});
+        digitisers_.emplace(id, [&detector](::SHiP::SimHit const& hit) -> DigitisedHit {return detector.digitise(hit);});
     }
-
 
     [[nodiscard]]
     DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits)
     {
         DigitisedHits result;
-
         for (auto const& sim_hit : sim_hits) {
             auto hit = digitise(sim_hit);
             std::visit([&result](auto&& concrete_hit) {
@@ -96,11 +91,10 @@ public:
         auto const it = digitisers_.find(id);
 
         if (it == digitisers_.end()) {
-            throw std::runtime_error{"No digitiser registered for detector ID " + std::to_string(hit.detectorId);
+            throw std::runtime_error{ "No digitiser registered for detector ID " + std::to_string(hit.detectorId)};
         }
         return it->second(hit);
     }
-
 
 private:
     StrawTubes straw_tubes_;
@@ -111,6 +105,7 @@ private:
 
     std::unordered_map<SHiP::DetectorID, DigitiseFunction> digitisers_;
 };
+}  // namespace Shannon
 
 PHLEX_REGISTER_ALGORITHMS(m, config)
 {
@@ -132,6 +127,6 @@ PHLEX_REGISTER_ALGORITHMS(m, config)
             "ubt_hits",
             "sbt_hits",
             "timing_detector_hits");
-}
+};
 
-}  // namespace Shannon
+
