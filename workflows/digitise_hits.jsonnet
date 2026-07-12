@@ -9,7 +9,7 @@
   sources: {
     rntuple_source: {
       cpp: 'read_sim_file',
-      input_file:  '/vols/ship/masmith/stack/aegir/fixed_target_mt_output.root', 
+      input_file:  '../aegir/fixed_target_mt_output.root', 
       ntuple_name: 'events',
       field_name:  'sim_particles',
       layer:       'spill'
@@ -25,12 +25,12 @@
       cpp: 'form_module',
       technology: 'ROOT_TTREE',
       products: [
-  'straw_tubes_hits',
-  'calorimeter_hits',
-  'ubt_hits',
-  'sbt_hits',
-  'timing_detector_hits',
-],
+        'ubt_hits',
+        'sbt_hits',
+        'straw_tubes_hits',
+        'calorimeter_hits',
+        'timing_detector_hits',
+      ],
     },
   },
 }
