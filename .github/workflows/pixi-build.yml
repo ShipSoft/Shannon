@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+name: Pixi Build
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: pixi-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    uses: ShipSoft/.github/.github/workflows/pixi-cmake-build.yml@main
+    with:
+      tasks: '["configure", "build", "install", "test"]'

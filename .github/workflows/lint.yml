@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: lint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prek:
+    uses: ShipSoft/.github/.github/workflows/prek.yml@main
+  commit-check:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ShipSoft/.github/.github/workflows/commit-check.yml@main

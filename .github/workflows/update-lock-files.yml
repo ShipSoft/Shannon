@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+name: Update lock files
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 5 1 * *
+jobs:
+  pixi-update:
+    uses: ShipSoft/.github/.github/workflows/pixi-lock-update.yml@main
+    with:
+      base: main

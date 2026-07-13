@@ -1,0 +1,12 @@
+# SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+name: Doxygen Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  docs:
+    uses: ShipSoft/.github/.github/workflows/doxygen-pages.yml@main

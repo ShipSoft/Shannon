@@ -33,18 +33,27 @@ cxx-compiler = "*"
 
 [activation]
 scripts = ["activate.sh"]
-env = { 
+env = {
     LD_LIBRARY_PATH = "$PIXI_PROJECT_ROOT/.local-deps/data-model/lib:$LD_LIBRARY_PATH",
 }
 
 [tasks]
 
-configure-datamodel = """
+# Shannon needs the digitised-hit headers from data-model PR #5 (RecHit and
+# per-detector hits), which no shipdatamodel release provides yet. Build the PR
+# head from a sibling checkout (cloned on demand, e.g. in CI) and overlay it
+# via .local-deps; drop the pull/5/head pin once the PR is merged and released.
+fetch-datamodel = """
+test -d ../data-model || (git clone --depth 1 https://github.com/ShipSoft/data-model ../data-model \
+    && git -C ../data-model fetch --depth 1 origin pull/5/head \
+    && git -C ../data-model checkout --detach FETCH_HEAD)
+"""
+configure-datamodel = { cmd = """
 cmake -S ../data-model -B build-datamodel -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/.local-deps/data-model \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
-"""
+""", depends-on = ["fetch-datamodel"] }
 build-datamodel = { cmd = "cmake --build build-datamodel -j8", depends-on = ["configure-datamodel"] }
 install-datamodel = { cmd = "cmake --install build-datamodel", depends-on = ["build-datamodel"] }
 
