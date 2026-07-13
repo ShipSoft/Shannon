@@ -1,36 +1,26 @@
 #pragma once
-#include <random>
-
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
+#include <random>
 
 namespace Shannon {
 
 class UpstreamTagger {
-public:
-    explicit UpstreamTagger(std::mt19937& rng,
-                             double sigma_x = 0.1,
-                             double sigma_y = 0.1)
-        : rng_(rng),
-          dx_(0.0, sigma_x),
-          dy_(0.0, sigma_y) {}
+   public:
+    explicit UpstreamTagger(std::mt19937& rng, double sigma_x = 0.1, double sigma_y = 0.1)
+        : rng_(rng), dx_(0.0, sigma_x), dy_(0.0, sigma_y) {}
 
     ::SHiP::UBTHit digitise(::SHiP::SimHit const& sim_hit) {
         auto reconstructed = SHiP::fromSimHit(sim_hit);
-        reconstructed.position = {
-            sim_hit.position[0] + dx_(rng_),
-            sim_hit.position[1] + dy_(rng_),
-            sim_hit.position[2]
-        };
+        reconstructed.position = {sim_hit.position[0] + dx_(rng_), sim_hit.position[1] + dy_(rng_),
+                                  sim_hit.position[2]};
 
-        return ::SHiP::UBTHit{
-            .recHit = reconstructed
-        };
+        return ::SHiP::UBTHit{.recHit = reconstructed};
     }
 
-private:
+   private:
     std::mt19937& rng_;
     std::normal_distribution<double> dx_;
     std::normal_distribution<double> dy_;
 };
-}  // namespace shannon
+}  // namespace Shannon

@@ -14,7 +14,6 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
 
-
 # Phlex's cmake config does not call find_dependency for its transitive deps
 find_package(Boost REQUIRED COMPONENTS json)
 find_package(TBB REQUIRED)
@@ -30,24 +29,17 @@ find_package(
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
 target_link_libraries(
     read_sim_file
-    PRIVATE
-        phlex::module
-        SHiP::SHiPDataModel
-        ROOT::RIO
-        ROOT::ROOTNTuple
+    PRIVATE phlex::module SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
 )
 
 # Passthrough plugin
 add_library(digitise_hits MODULE src/digitise_hits.cpp)
 
-target_include_directories(digitise_hits
-    PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
-target_link_libraries(
+target_include_directories(
     digitise_hits
-    PRIVATE phlex::module SHiP::SHiPDataModel
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
+target_link_libraries(digitise_hits PRIVATE phlex::module SHiP::SHiPDataModel)
 
 # Reconstruction output module plugin
 add_library(digitised_output_module MODULE src/digitised_output_module.cpp)
@@ -65,11 +57,7 @@ target_link_libraries(
 # Install
 include(GNUInstallDirs)
 
-set(PLUGIN_TARGETS
-    read_sim_file
-    digitise_hits
-    digitised_output_module
-)
+set(PLUGIN_TARGETS read_sim_file digitise_hits digitised_output_module)
 
 install(TARGETS ${PLUGIN_TARGETS} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY workflows/ DESTINATION share/shannon/workflows)

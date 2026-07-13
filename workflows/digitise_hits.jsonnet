@@ -9,7 +9,7 @@
   sources: {
     rntuple_source: {
       cpp: 'read_sim_file',
-      input_file:  '../aegir/fixed_target_mt_output.root', 
+      input_file:  '../aegir/fixed_target_mt_output.root',
       ntuple_name: 'events',
       field_name:  'sim_particles',
       layer:       'spill'
