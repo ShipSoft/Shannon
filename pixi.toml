@@ -52,6 +52,7 @@ configure-datamodel = { cmd = """
 cmake -S ../data-model -B build-datamodel -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$PIXI_PROJECT_ROOT/.local-deps/data-model \
+    -DCMAKE_INSTALL_LIBDIR=lib \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
 """, depends-on = ["fetch-datamodel"] }
 build-datamodel = { cmd = "cmake --build build-datamodel -j8", depends-on = ["configure-datamodel"] }
@@ -62,7 +63,7 @@ cmake -S . -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
     -DCMAKE_INSTALL_LIBDIR=lib \
-    -DSHiPDataModel_DIR=$PIXI_PROJECT_ROOT/.local-deps/data-model/lib64/cmake/SHiPDataModel \
+    -DSHiPDataModel_DIR=$PIXI_PROJECT_ROOT/.local-deps/data-model/lib/cmake/SHiPDataModel \
     -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
 """, depends-on = ["install-datamodel"] }
 
