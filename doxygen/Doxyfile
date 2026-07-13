@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
+#
+# SPDX-License-Identifier: LGPL-3.0-or-later
+
+PROJECT_NAME           = "Shannon"
+PROJECT_BRIEF          = "Phlex-based digitisation framework for the SHiP experiment."
+OUTPUT_DIRECTORY       = doxygen
+INPUT                  = src
+RECURSIVE              = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_PRIVATE        = NO
+GENERATE_LATEX         = NO
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+HAVE_DOT               = YES
+QUIET                  = YES
+WARN_NO_PARAMDOC       = NO
+USE_MDFILE_AS_MAINPAGE = README.md
+INPUT                 += README.md
+JAVADOC_AUTOBRIEF      = YES
