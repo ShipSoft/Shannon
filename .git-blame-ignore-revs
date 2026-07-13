@@ -1,2 +1,3 @@
 # Revisions to ignore in git blame
 # (formatting-only commits)
+fa115f344ea75d1e51fa45582d2ebe9974b4958d  # style: apply clang-format, gersemi and prek fixes
