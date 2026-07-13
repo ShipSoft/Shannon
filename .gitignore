@@ -1,0 +1,12 @@
+build/
+build-*/
+install/
+.local-deps/
+.cache/
+.pixi/
+__pycache__/
+*.pyc
+*.root
+.claude/
+doxygen/html/
+doxygen/latex/

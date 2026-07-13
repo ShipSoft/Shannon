@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: LGPL-3.0-or-later
+# Copyright (C) CERN for the benefit of the SHiP Collaboration
+
 [workspace]
 name = "shannon"
 description = "Phlex-based digitisation framework for the SHiP experiment"
@@ -66,6 +69,38 @@ hyperfine = "*"
 just = "*"
 linux-perf = "*"
 
+# Linting / formatting toolchain. prek orchestrates the hooks; the tools come
+# from this environment so versions are tracked in pixi.lock and run identically
+# everywhere (including NixOS). See .pre-commit-config.yaml.
+[feature.lint.dependencies]
+prek = "*"
+python = ">=3.11"
+clang-format = "22.*"
+codespell = "*"
+reuse = "*"
+cffconvert = "*"
+commitizen = "*"
+
+# Pinned via PyPI to match the previous hook revs exactly: conda-forge's cpplint
+# is stuck at 1.6.0 (a different, stale fork), and its gersemi (0.24.0) lags the
+# repo's 0.27.7 and would reflow CMake files.
+[feature.lint.pypi-dependencies]
+cpplint = "==2.0.2"
+gersemi = "==0.27.7"
+
+[feature.lint.tasks]
+lint = "prek run --all-files"
+# Install the git hooks and route them through `pixi run` so the conda-provided
+# hook tools are on PATH at commit time (required on NixOS, where the tools are
+# not runnable without pixi activation).
+install-hooks = '''
+prek install --hook-type pre-commit --hook-type commit-msg
+hooks=$(git rev-parse --git-path hooks)
+sed -i 's#"$PREK" hook-impl#pixi run -e lint prek hook-impl#' "$hooks/pre-commit"
+sed -i 's#"$PREK" hook-impl#pixi run -e lint prek hook-impl#' "$hooks/commit-msg"
+'''
+
 [environments]
 default = { solve-group = "default" }
 bench = { features = ["bench"], solve-group = "default" }
+lint = { features = ["lint"], solve-group = "lint" }
