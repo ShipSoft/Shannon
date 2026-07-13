@@ -1,3 +1,4 @@
+#pragma once
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
 #include <random>
