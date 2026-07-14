@@ -27,7 +27,9 @@ using namespace phlex::experimental::literals;
 PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const input_file = config.get<std::string>("input_file");
     auto const ntuple_name = config.get<std::string>("ntuple_name");
-    auto const field_name = config.get<std::string>("field_name");
+    auto const particles_field =
+        config.get<std::string>("particles_field", std::string{"sim_particles"});
+    auto const hits_field = config.get<std::string>("hits_field", std::string{"sim_hits"});
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
 
     // Each provider owns its own reader: providers are separate graph nodes
@@ -35,12 +37,12 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
     auto particle_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimParticle>>>(
-        particle_reader->GetView<std::vector<SHiP::SimParticle>>(field_name));
+        particle_reader->GetView<std::vector<SHiP::SimParticle>>(particles_field));
 
     std::shared_ptr<ROOT::RNTupleReader> hit_reader =
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
     auto hit_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimHit>>>(
-        hit_reader->GetView<std::vector<SHiP::SimHit>>("sim_hits"));
+        hit_reader->GetView<std::vector<SHiP::SimHit>>(hits_field));
 
     m.provide(
          "read_rntuple",
