@@ -22,7 +22,7 @@
          layer: 'spill',
      },
     output: {
-      cpp: 'form_module',
+      cpp: 'digitised_output_module',
       technology: 'ROOT_TTREE',
       products: [
         'ubt_hits',
