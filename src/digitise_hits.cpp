@@ -112,6 +112,7 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
          concurrency::serial)
         .input_family(
             product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "sim_hits"})
+        // Positional: must match the element order of the DigitisedHits tuple.
         .output_product_suffixes("ubt_hits", "sbt_hits", "straw_tubes_hits", "calorimeter_hits",
                                  "timing_detector_hits");
 };
