@@ -16,4 +16,4 @@ jobs:
   build:
     uses: ShipSoft/.github/.github/workflows/pixi-cmake-build.yml@main
     with:
-      tasks: '["configure", "build", "install", "test"]'
+      tasks: '["configure", "build", "install", "test", "smoke"]'

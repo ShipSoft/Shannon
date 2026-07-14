@@ -76,6 +76,22 @@ target_link_libraries(
         spdlog::spdlog
 )
 
+# Smoke-test input generator (build-only, not installed)
+add_executable(make_test_input tools/make_test_input.cpp)
+target_include_directories(
+    make_test_input
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+target_include_directories(
+    make_test_input
+    SYSTEM
+    PRIVATE "${Random123_INCLUDE_DIR}"
+)
+target_link_libraries(
+    make_test_input
+    PRIVATE SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
+)
+
 # Install
 include(GNUInstallDirs)
 
