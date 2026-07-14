@@ -28,6 +28,7 @@ find_package(SHiPDataModel REQUIRED)
 find_path(Random123_INCLUDE_DIR Random123/philox.h REQUIRED)
 
 # Phlex's cmake config does not call find_dependency for its transitive deps
+cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost
 find_package(Boost REQUIRED COMPONENTS json)
 find_package(TBB REQUIRED)
 find_package(spdlog REQUIRED)
@@ -59,7 +60,7 @@ target_include_directories(
 )
 target_link_libraries(digitise_hits PRIVATE phlex::module SHiP::SHiPDataModel)
 
-# Reconstruction output module plugin
+# Digitised output module plugin
 add_library(digitised_output_module MODULE src/digitised_output_module.cpp)
 target_link_libraries(
     digitised_output_module
@@ -68,8 +69,9 @@ target_link_libraries(
         SHiP::SHiPDataModel
         ROOT::Hist
         ROOT::RIO
+        ROOT::ROOTHistUtil
         ROOT::ROOTNTuple
-        Boost::headers
+        spdlog::spdlog
 )
 
 # Install
