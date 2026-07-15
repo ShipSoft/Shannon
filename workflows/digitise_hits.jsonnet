@@ -23,14 +23,7 @@
      },
     output: {
       cpp: 'digitised_output_module',
-      technology: 'ROOT_TTREE',
-      products: [
-        'ubt_hits',
-        'sbt_hits',
-        'straw_tubes_hits',
-        'calorimeter_hits',
-        'timing_detector_hits',
-      ],
+      rntuple_file: 'digitised_hits.root',
     },
   },
 }

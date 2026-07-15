@@ -2,14 +2,12 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// sim_output_module.cpp — Phlex module plugin
+// digitised_output_module.cpp — Phlex module plugin
 //
-// Observers for simulation output:
-//   - RNTuple parallel writer for reconstruction
-//   - Validation histograms
+// Observer that writes digitised detector hits to per-detector RNTuples
+// in a single ROOT output file.
 
 #include "TFile.h"
-#include "TH1D.h"
 #include "phlex/core/product_selector.hpp"
 #include "phlex/module.hpp"
 
@@ -17,19 +15,12 @@
 #include <ROOT/RNTupleFillStatus.hxx>
 #include <ROOT/RNTupleModel.hxx>
 #include <ROOT/RNTupleParallelWriter.hxx>
-#include <ROOT/RNTupleWriteOptions.hxx>
 
-#include <SHiP/MCParticle.hpp>
-#include <SHiP/RecHit.hpp>
-#include <SHiP/SimHit.hpp>
-#include <SHiP/SimParticle.hpp>
-#include <SHiP/SimResult.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
 #include <SHiP/detectors/StrawTubesHit.hpp>
 #include <SHiP/detectors/TimeDetHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
-#include <boost/histogram.hpp>
 #include <memory>
 #include <mutex>
 #include <oneapi/tbb/enumerable_thread_specific.h>
@@ -113,10 +104,10 @@ class HitRNTupleWriter {
    public:
     explicit HitRNTupleWriter(std::string const& filename)
         : file_service_{filename},
-          calo_{file_service_, "calo_hits"},
+          calo_{file_service_, "calorimeter_hits"},
           sbt_{file_service_, "sbt_hits"},
           straw_{file_service_, "straw_tubes_hits"},
-          timedet_{file_service_, "timedet_hits"},
+          timedet_{file_service_, "timing_detector_hits"},
           ubt_{file_service_, "ubt_hits"} {}
 
     void write_calo(std::vector<SHiP::CaloHit> const& hits) {
