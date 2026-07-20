@@ -10,18 +10,14 @@
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
-#include <random>
 
 namespace Shannon {
 
 class UpstreamTagger {
    public:
-    explicit UpstreamTagger(std::mt19937& rng, double sigma_x = 0.1, double sigma_y = 0.1)
-        : smearer_{rng, sigma_x, sigma_y} {}
-
     // Placeholder: Gaussian smearing until the UBT digitisation model exists
-    ::SHiP::UBTHit digitise(::SHiP::SimHit const& sim_hit) {
-        return {.recHit = smearer_.smear(sim_hit)};
+    ::SHiP::UBTHit digitise(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
+        return {.recHit = smearer_.smear(sim_hit, rng)};
     }
 
    private:

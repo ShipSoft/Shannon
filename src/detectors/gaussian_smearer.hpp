@@ -10,29 +10,30 @@
 
 #pragma once
 
+#include "philox_rng.hpp"
+
 #include <SHiP/RecHit.hpp>
 #include <SHiP/SimHit.hpp>
-#include <random>
 
 namespace Shannon {
 
 class GaussianSmearer {
    public:
-    explicit GaussianSmearer(std::mt19937& rng, double sigma_x = 0.1, double sigma_y = 0.1)
-        : rng_(rng), dx_(0.0, sigma_x), dy_(0.0, sigma_y) {}
+    explicit GaussianSmearer(double sigma_x = 0.1, double sigma_y = 0.1)
+        : sigma_x_{sigma_x}, sigma_y_{sigma_y} {}
 
-    ::SHiP::RecHit smear(::SHiP::SimHit const& sim_hit) {
+    ::SHiP::RecHit smear(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
         auto reconstructed = SHiP::fromSimHit(sim_hit);
-        reconstructed.position = {sim_hit.position[0] + dx_(rng_), sim_hit.position[1] + dy_(rng_),
+        reconstructed.position = {sim_hit.position[0] + rng.gaussian(0.0, sigma_x_),
+                                  sim_hit.position[1] + rng.gaussian(0.0, sigma_y_),
                                   sim_hit.position[2]};
 
         return reconstructed;
     }
 
    private:
-    std::mt19937& rng_;
-    std::normal_distribution<double> dx_;
-    std::normal_distribution<double> dy_;
+    double sigma_x_;
+    double sigma_y_;
 };
 
 }  // namespace Shannon

@@ -63,4 +63,10 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          },
          concurrency::serial)
         .output_product("rntuple_source", "sim_hits", layer);
+
+    // Expose the cell index itself so downstream algorithms can seed
+    // per-event counter-based RNGs from the event number.
+    m.provide(
+         "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
+        .output_product("rntuple_source", "id", layer);
 }
