@@ -5,8 +5,11 @@
 // digitise_hits.cpp — Phlex module plugin
 //
 // Digitises simulated hits into per-detector reconstructed hit collections.
+// A fresh counter-based RNG is seeded per event from (seed, event number),
+// so results are reproducible under full concurrency.
 
 #include "phlex/core/product_selector.hpp"
+#include "phlex/model/data_cell_index.hpp"
 #include "phlex/module.hpp"
 
 #include <tuple>
@@ -18,13 +21,13 @@
 #include <SHiP/detectors/StrawTubesHit.hpp>
 #include <SHiP/detectors/TimeDetHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
+#include <cstdint>
 #include <detectors/calorimeter.hpp>
 #include <detectors/straw_tubes.hpp>
 #include <detectors/surround_tagger.hpp>
 #include <detectors/timing_detector.hpp>
 #include <detectors/upstream_tagger.hpp>
-#include <memory>
-#include <random>
+#include <philox_rng.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -35,8 +38,9 @@ using namespace phlex;
 
 namespace {
 
-std::random_device rd{};
-std::mt19937 rng{rd()};
+// Stream selector separating the digitiser's draws from other users of the
+// same seed (cf. PhiloxRng's key_hi parameter).
+constexpr std::uint32_t digitise_stream = 0xD161715E;
 
 using DigitisedHit = std::variant<::SHiP::UBTHit, ::SHiP::SBTHit, ::SHiP::StrawTubesHit,
                                   ::SHiP::CaloHit, ::SHiP::TimeDetHit>;
@@ -47,15 +51,9 @@ using DigitisedHits = std::tuple<std::vector<::SHiP::UBTHit>, std::vector<::SHiP
 
 class Digitiser {
    public:
-    explicit Digitiser(std::mt19937& rng)
-        : upstream_tagger_{rng},
-          surround_tagger_{rng},
-          straw_tubes_{rng},
-          calorimeter_{rng},
-          timing_detector_{rng} {}
-
     [[nodiscard]]
-    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits) {
+    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits,
+                             Shannon::PhiloxRng& rng) const {
         DigitisedHits result;
         for (auto const& sim_hit : sim_hits) {
             std::visit(
@@ -64,24 +62,24 @@ class Digitiser {
                     std::get<std::vector<Hit>>(result).push_back(
                         std::forward<decltype(concrete_hit)>(concrete_hit));
                 },
-                digitise(sim_hit));
+                digitise(sim_hit, rng));
         }
         return result;
     }
 
     [[nodiscard]]
-    DigitisedHit digitise(::SHiP::SimHit const& hit) {
+    DigitisedHit digitise(::SHiP::SimHit const& hit, Shannon::PhiloxRng& rng) const {
         switch (static_cast<SHiP::DetectorID>(hit.detectorId)) {
             case SHiP::DetectorID::UpstreamTagger:
-                return upstream_tagger_.digitise(hit);
+                return upstream_tagger_.digitise(hit, rng);
             case SHiP::DetectorID::SurroundTagger:
-                return surround_tagger_.digitise(hit);
+                return surround_tagger_.digitise(hit, rng);
             case SHiP::DetectorID::StrawTubes:
-                return straw_tubes_.digitise(hit);
+                return straw_tubes_.digitise(hit, rng);
             case SHiP::DetectorID::Calorimeter:
-                return calorimeter_.digitise(hit);
+                return calorimeter_.digitise(hit, rng);
             case SHiP::DetectorID::TimingDetector:
-                return timing_detector_.digitise(hit);
+                return timing_detector_.digitise(hit, rng);
         }
         throw std::runtime_error{"No digitiser registered for detector ID " +
                                  std::to_string(hit.detectorId)};
@@ -99,15 +97,18 @@ class Digitiser {
 
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
-    auto digitiser = std::make_shared<Digitiser>(rng);
+    auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
     m.transform(
          "digitise_hits",
-         [digitiser](std::vector<::SHiP::SimHit> const& sim_hits) {
-             return (*digitiser)(sim_hits);
+         [seed, digitiser = Digitiser{}](data_cell_index const& id,
+                                         std::vector<::SHiP::SimHit> const& sim_hits) {
+             Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
+             return digitiser(sim_hits, rng);
          },
-         concurrency::serial)
+         concurrency::unlimited)
         .input_family(
+            product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "id"},
             product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "sim_hits"})
         // Positional: must match the element order of the DigitisedHits tuple.
         .output_product_suffixes("ubt_hits", "sbt_hits", "straw_tubes_hits", "calorimeter_hits",

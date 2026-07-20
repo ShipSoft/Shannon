@@ -25,6 +25,7 @@ set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags")
 
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
+find_path(Random123_INCLUDE_DIR Random123/philox.h REQUIRED)
 
 # Phlex's cmake config does not call find_dependency for its transitive deps
 find_package(Boost REQUIRED COMPONENTS json)
@@ -44,12 +45,17 @@ target_link_libraries(
     PRIVATE phlex::module SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
 )
 
-# Passthrough plugin
+# Digitisation plugin
 add_library(digitise_hits MODULE src/digitise_hits.cpp)
 
 target_include_directories(
     digitise_hits
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
+target_include_directories(
+    digitise_hits
+    SYSTEM
+    PRIVATE "${Random123_INCLUDE_DIR}"
 )
 target_link_libraries(digitise_hits PRIVATE phlex::module SHiP::SHiPDataModel)
 
