@@ -13,6 +13,7 @@
 #include "phlex/module.hpp"
 
 #include <tuple>
+#include <type_traits>
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
