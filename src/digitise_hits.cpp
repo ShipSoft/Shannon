@@ -17,11 +17,11 @@
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
-#include <SHiP/detectors/DetectorID.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
 #include <SHiP/detectors/StrawTubesHit.hpp>
 #include <SHiP/detectors/TimeDetHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
+#include <SHiP/detectors/detector_id.hpp>
 #include <cstdint>
 #include <detectors/calorimeter.hpp>
 #include <detectors/straw_tubes.hpp>
@@ -70,16 +70,16 @@ class Digitiser {
 
     [[nodiscard]]
     DigitisedHit digitise(::SHiP::SimHit const& hit, Shannon::PhiloxRng& rng) const {
-        switch (static_cast<SHiP::DetectorID>(hit.detectorId)) {
-            case SHiP::DetectorID::UpstreamTagger:
+        switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
+            case SHiP::detector_id::UpstreamTagger:
                 return upstream_tagger_.digitise(hit, rng);
-            case SHiP::DetectorID::SurroundTagger:
+            case SHiP::detector_id::SurroundTagger:
                 return surround_tagger_.digitise(hit, rng);
-            case SHiP::DetectorID::StrawTubes:
+            case SHiP::detector_id::StrawTubes:
                 return straw_tubes_.digitise(hit, rng);
-            case SHiP::DetectorID::Calorimeter:
+            case SHiP::detector_id::Calorimeter:
                 return calorimeter_.digitise(hit, rng);
-            case SHiP::DetectorID::TimingDetector:
+            case SHiP::detector_id::TimingDetector:
                 return timing_detector_.digitise(hit, rng);
         }
         throw std::runtime_error{"No digitiser registered for detector ID " +
