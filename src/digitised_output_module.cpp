@@ -31,6 +31,7 @@
 #include <SHiP/detectors/UBTHit.hpp>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <memory>
 #include <mutex>
 #include <oneapi/tbb/enumerable_thread_specific.h>
@@ -311,6 +312,15 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     if (mode != "digi" && mode != "noop")
         throw std::runtime_error("Unknown digitised_output_module mode: '" + mode +
                                  "' (expected 'digi' or 'noop')");
+
+    // Recreating the histogram file at teardown would truncate the RNTuple
+    // output if both are configured to the same path.
+    if (std::filesystem::weakly_canonical(rntuple_file) ==
+        std::filesystem::weakly_canonical(histo_file))
+        throw std::runtime_error(
+            "digitised_output_module: rntuple_file and histo_file must "
+            "differ (both resolve to '" +
+            rntuple_file + "')");
 
     // product_selector's members move from whatever they are given (even
     // lvalues), so hand each selector its own identifier copies.
