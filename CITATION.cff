@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: If you use this software, please cite it as below.
 title: Shannon
-version: 0.1.0
-date-released: "2026-07-13"
+version: 0.2.0
+date-released: "2026-07-22"
 url: https://github.com/ShipSoft/Shannon
 repository-code: https://github.com/ShipSoft/Shannon
 type: software
