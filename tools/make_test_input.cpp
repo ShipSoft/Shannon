@@ -16,6 +16,7 @@
 #include <SHiP/detectors/detector_id.hpp>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <philox_rng.hpp>
 #include <string>
 #include <vector>
@@ -23,6 +24,11 @@
 int main(int argc, char* argv[]) {
     std::string const filename = argc > 1 ? argv[1] : "smoke_input.root";
     auto const n_events = argc > 2 ? std::stoul(argv[2]) : 10UL;
+    // The event loop counts (and seeds the RNG) with a uint32_t.
+    if (n_events > std::numeric_limits<std::uint32_t>::max()) {
+        std::fprintf(stderr, "n_events out of range: %lu\n", n_events);
+        return 1;
+    }
 
     auto model = ROOT::RNTupleModel::Create();
     auto particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
