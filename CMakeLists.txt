@@ -11,18 +11,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
 set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
 
-# Emit DT_RUNPATH instead of DT_RPATH (the conda toolchain defaults to the
-# latter, which overrides LD_LIBRARY_PATH). The activation script puts the
-# .local-deps data-model overlay on LD_LIBRARY_PATH, which must win over the
-# released shipdatamodel in the conda env.
-set(CMAKE_SHARED_LINKER_FLAGS
-    "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags"
-)
-set(CMAKE_MODULE_LINKER_FLAGS
-    "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--enable-new-dtags"
-)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--enable-new-dtags")
-
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
 find_path(Random123_INCLUDE_DIR Random123/philox.h REQUIRED)

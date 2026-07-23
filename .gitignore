@@ -1,7 +1,6 @@
 build/
 build-*/
 install/
-.local-deps/
 .cache/
 .pixi/
 __pycache__/

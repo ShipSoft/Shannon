@@ -11,5 +11,3 @@ export LD_LIBRARY_PATH="$PIXI_PROJECT_ROOT/build${LD_LIBRARY_PATH:+:$LD_LIBRARY_
 # shipgeometry installs geometry DBs under $CONDA_PREFIX/share/geometry/.
 # geometry_geomodel_provider resolves bare db_file names via this variable.
 export SHIPGEOMETRY_ROOT="${SHIPGEOMETRY_ROOT:-$CONDA_PREFIX}"
-
-export LD_LIBRARY_PATH="$PIXI_PROJECT_ROOT/.local-deps/data-model/lib:$LD_LIBRARY_PATH"
