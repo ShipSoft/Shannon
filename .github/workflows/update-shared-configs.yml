@@ -8,3 +8,7 @@ jobs:
     uses: ShipSoft/.github/.github/workflows/config-sync.yml@main
     with:
       base: main
+      files: |
+        AI_POLICY.md
+        .clang-tidy
+        cliff.toml
