@@ -23,7 +23,9 @@
 #include <ROOT/RNTupleFillStatus.hxx>
 #include <ROOT/RNTupleModel.hxx>
 #include <ROOT/RNTupleParallelWriter.hxx>
+#include <type_traits>
 
+#include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
 #include <SHiP/detectors/StrawTubesHit.hpp>
@@ -32,6 +34,7 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <oneapi/tbb/enumerable_thread_specific.h>
@@ -57,6 +60,7 @@ using SBTHits = std::vector<SHiP::SBTHit>;
 using StrawTubesHits = std::vector<SHiP::StrawTubesHit>;
 using CaloHits = std::vector<SHiP::CaloHit>;
 using TimeDetHits = std::vector<SHiP::TimeDetHit>;
+using SimHits = std::vector<SHiP::SimHit>;
 
 class RNTupleFileService {
    public:
@@ -131,7 +135,8 @@ class HitRNTupleWriter {
           sbt_{file_service_, "sbt_hits"},
           straw_{file_service_, "straw_tubes_hits"},
           timedet_{file_service_, "timing_detector_hits"},
-          ubt_{file_service_, "ubt_hits"} {}
+          ubt_{file_service_, "ubt_hits"},
+          sim_{file_service_, "sim_hits"} {}
 
     void write_calo(std::vector<SHiP::CaloHit> const& hits) {
         for (auto const& hit : hits) {
@@ -163,6 +168,12 @@ class HitRNTupleWriter {
         }
     }
 
+    void write_sim(std::vector<SHiP::SimHit> const& hits) {
+        for (auto const& hit : hits) {
+            sim_.write(hit);
+        }
+    }
+
    private:
     // Declared first so it is destroyed last.
     RNTupleFileService file_service_;
@@ -172,6 +183,7 @@ class HitRNTupleWriter {
     TypedHitWriter<SHiP::StrawTubesHit> straw_;
     TypedHitWriter<SHiP::TimeDetHit> timedet_;
     TypedHitWriter<SHiP::UBTHit> ubt_;
+    TypedHitWriter<SHiP::SimHit> sim_;
 };
 
 using HistD = RHist<double>;
@@ -193,21 +205,29 @@ class DigiHistogrammer {
           h_straw_tubes_multiplicity_{make_hist(1000, -0.5, 999.5)},
           h_calorimeter_multiplicity_{make_hist(1000, -0.5, 999.5)},
           h_timing_detector_multiplicity_{make_hist(1000, -0.5, 999.5)},
+          h_sim_hit_multiplicity_{make_hist(1000, -0.5, 999.5)},
           h_hit_x_{make_hist(200, -3000., 3000.)},
           h_hit_y_{make_hist(200, -6000., 6000.)},
-          h_hit_z_{make_hist(200, -1000., 12000.)},
+          h_hit_z_{make_hist(200, -1000., 120000.)},
+          h_sim_hit_x_{make_hist(200, -3000., 3000.)},
+          h_sim_hit_y_{make_hist(200, -6000., 6000.)},
+          h_sim_hit_z_{make_hist(200, -1000., 120000.)},
           f_ubt_multiplicity_{h_ubt_multiplicity_},
           f_sbt_multiplicity_{h_sbt_multiplicity_},
           f_straw_tubes_multiplicity_{h_straw_tubes_multiplicity_},
           f_calorimeter_multiplicity_{h_calorimeter_multiplicity_},
           f_timing_detector_multiplicity_{h_timing_detector_multiplicity_},
+          f_sim_hit_multiplicity_{h_sim_hit_multiplicity_},
           f_hit_x_{h_hit_x_},
           f_hit_y_{h_hit_y_},
-          f_hit_z_{h_hit_z_} {}
+          f_hit_z_{h_hit_z_},
+          f_sim_hit_x_{h_sim_hit_x_},
+          f_sim_hit_y_{h_sim_hit_y_},
+          f_sim_hit_z_{h_sim_hit_z_} {}
 
     void observe(UBTHits const& ubt_hits, SBTHits const& sbt_hits,
                  StrawTubesHits const& straw_tubes_hits, CaloHits const& calorimeter_hits,
-                 TimeDetHits const& timing_detector_hits) {
+                 TimeDetHits const& timing_detector_hits, SimHits const& sim_hits) {
         auto& ctxs = fill_contexts_.local();
         if (!ctxs.ubt_multiplicity) {
             ctxs.ubt_multiplicity = f_ubt_multiplicity_.CreateFillContext();
@@ -215,24 +235,44 @@ class DigiHistogrammer {
             ctxs.straw_tubes_multiplicity = f_straw_tubes_multiplicity_.CreateFillContext();
             ctxs.calorimeter_multiplicity = f_calorimeter_multiplicity_.CreateFillContext();
             ctxs.timing_detector_multiplicity = f_timing_detector_multiplicity_.CreateFillContext();
+            ctxs.sim_hit_multiplicity = f_sim_hit_multiplicity_.CreateFillContext();
             ctxs.hit_x = f_hit_x_.CreateFillContext();
             ctxs.hit_y = f_hit_y_.CreateFillContext();
             ctxs.hit_z = f_hit_z_.CreateFillContext();
+            ctxs.sim_hit_x = f_sim_hit_x_.CreateFillContext();
+            ctxs.sim_hit_y = f_sim_hit_y_.CreateFillContext();
+            ctxs.sim_hit_z = f_sim_hit_z_.CreateFillContext();
         }
+
         auto observe_hits = [&ctxs](auto const& hits, ContextD& multiplicity) {
             multiplicity.Fill(static_cast<double>(hits.size()));
+            using HitT = std::remove_cvref_t<decltype(*std::begin(hits))>;
             for (auto const& hit : hits) {
-                auto const& pos = hit.recHit.position;
-                ctxs.hit_x->Fill(pos[0]);
-                ctxs.hit_y->Fill(pos[1]);
-                ctxs.hit_z->Fill(pos[2]);
+                // FIXME: This is a fudge until the hit classes get sorted
+                auto const& pos = [&hit]() -> auto const& {
+                    if constexpr (requires { hit.recHit; })
+                        return hit.recHit.position;
+                    else
+                        return hit.position;
+                }();
+                if constexpr (std::is_same_v<HitT, SHiP::SimHit>) {
+                    ctxs.sim_hit_x->Fill(pos[0]);
+                    ctxs.sim_hit_y->Fill(pos[1]);
+                    ctxs.sim_hit_z->Fill(pos[2]);
+                } else {
+                    ctxs.hit_x->Fill(pos[0]);
+                    ctxs.hit_y->Fill(pos[1]);
+                    ctxs.hit_z->Fill(pos[2]);
+                }
             }
         };
+
         observe_hits(ubt_hits, *ctxs.ubt_multiplicity);
         observe_hits(sbt_hits, *ctxs.sbt_multiplicity);
         observe_hits(straw_tubes_hits, *ctxs.straw_tubes_multiplicity);
         observe_hits(calorimeter_hits, *ctxs.calorimeter_multiplicity);
         observe_hits(timing_detector_hits, *ctxs.timing_detector_multiplicity);
+        observe_hits(sim_hits, *ctxs.sim_hit_multiplicity);
     }
 
     ~DigiHistogrammer() {
@@ -255,9 +295,14 @@ class DigiHistogrammer {
                 *h_calorimeter_multiplicity_);
             put("h_timing_detector_multiplicity", "Timing-detector hits per event;N;Events",
                 *h_timing_detector_multiplicity_);
+            put("h_sim_hit_multiplicity", "Simulated hits per event;N;Events",
+                *h_sim_hit_multiplicity_);
             put("h_hit_x", "Digitised hit x position;x [mm];Entries", *h_hit_x_);
             put("h_hit_y", "Digitised hit y position;y [mm];Entries", *h_hit_y_);
             put("h_hit_z", "Digitised hit z position;z [mm];Entries", *h_hit_z_);
+            put("h_sim_hit_x", "Simulated hit x position;x [mm];Entries", *h_sim_hit_x_);
+            put("h_sim_hit_y", "Simulated hit y position;y [mm];Entries", *h_sim_hit_y_);
+            put("h_sim_hit_z", "Simulated hit z position;z [mm];Entries", *h_sim_hit_z_);
         } catch (std::exception const& e) {
             // RException, filesystem errors etc. — must not escape the destructor.
             try {
@@ -276,18 +321,22 @@ class DigiHistogrammer {
         std::shared_ptr<ContextD> straw_tubes_multiplicity;
         std::shared_ptr<ContextD> calorimeter_multiplicity;
         std::shared_ptr<ContextD> timing_detector_multiplicity;
+        std::shared_ptr<ContextD> sim_hit_multiplicity;
         std::shared_ptr<ContextD> hit_x;
         std::shared_ptr<ContextD> hit_y;
         std::shared_ptr<ContextD> hit_z;
+        std::shared_ptr<ContextD> sim_hit_x;
+        std::shared_ptr<ContextD> sim_hit_y;
+        std::shared_ptr<ContextD> sim_hit_z;
     };
 
     std::string filename_;
     std::shared_ptr<HistD> h_ubt_multiplicity_, h_sbt_multiplicity_, h_straw_tubes_multiplicity_,
-        h_calorimeter_multiplicity_, h_timing_detector_multiplicity_;
-    std::shared_ptr<HistD> h_hit_x_, h_hit_y_, h_hit_z_;
+        h_calorimeter_multiplicity_, h_timing_detector_multiplicity_, h_sim_hit_multiplicity_;
+    std::shared_ptr<HistD> h_hit_x_, h_hit_y_, h_hit_z_, h_sim_hit_x_, h_sim_hit_y_, h_sim_hit_z_;
     FillerD f_ubt_multiplicity_, f_sbt_multiplicity_, f_straw_tubes_multiplicity_,
-        f_calorimeter_multiplicity_, f_timing_detector_multiplicity_;
-    FillerD f_hit_x_, f_hit_y_, f_hit_z_;
+        f_calorimeter_multiplicity_, f_timing_detector_multiplicity_, f_sim_hit_multiplicity_;
+    FillerD f_hit_x_, f_hit_y_, f_hit_z_, f_sim_hit_x_, f_sim_hit_y_, f_sim_hit_z_;
     tbb::enumerable_thread_specific<FillContexts> fill_contexts_;
 };
 
@@ -295,7 +344,7 @@ class DigiHistogrammer {
 class DigiNoop {
    public:
     void observe(UBTHits const&, SBTHits const&, StrawTubesHits const&, CaloHits const&,
-                 TimeDetHits const&) {}
+                 TimeDetHits const&, SimHits const&) {}
 };
 
 }  // namespace
@@ -330,10 +379,13 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
                                 .suffix = phlex::experimental::identifier{suffix}};
     };
     // Positional: must match the parameter order of the observe() overloads.
-    auto hit_selectors = [&selector](auto& registered) {
+    auto hit_selectors = [&selector, &layer](auto& registered) {
         registered.input_family(selector("ubt_hits"), selector("sbt_hits"),
                                 selector("straw_tubes_hits"), selector("calorimeter_hits"),
-                                selector("timing_detector_hits"));
+                                selector("timing_detector_hits"),
+                                product_selector{.creator = "rntuple_source",
+                                                 .layer = phlex::experimental::identifier{layer},
+                                                 .suffix = "sim_hits"});
     };
 
     if (mode == "noop") {
@@ -359,6 +411,11 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
 
     writer.observe("write_ubt_hits", &HitRNTupleWriter::write_ubt, concurrency::unlimited)
         .input_family(selector("ubt_hits"));
+
+    writer.observe("write_sim_hits", &HitRNTupleWriter::write_sim, concurrency::unlimited)
+        .input_family(product_selector{.creator = "rntuple_source",
+                                       .layer = phlex::experimental::identifier{layer},
+                                       .suffix = "sim_hits"});
 
     auto histogrammer = m.make<DigiHistogrammer>(histo_file);
     auto registered_histogrammer =
