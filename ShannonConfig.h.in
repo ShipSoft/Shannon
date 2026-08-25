@@ -3,15 +3,11 @@
 #include <iostream>
 #include <string_view>
 
-#define Shannon_VERSION_MAJOR @shannon_VERSION_MAJOR@
-#define Shannon_VERSION_MINOR @shannon_VERSION_MINOR@
-#define Shannon_VERSION_PATCH @shannon_VERSION_PATCH@
-#define Shannon_VERSION @shannon_VERSION@
 #define Shannon_VERSION_STRING "@shannon_VERSION@"
 
 inline void printVersion(){
     std::cout<<"================================================"<<std::endl;
-    std::cout<<"Welcome to Shannon, the SHiP digitisaion package"<<std::endl;
+    std::cout<<"Welcome to Shannon, the SHiP digitisation package"<<std::endl;
     std::cout<<"Version "<<Shannon_VERSION_STRING<<std::endl;
     std::cout<<"================================================"<<std::endl;
 }
