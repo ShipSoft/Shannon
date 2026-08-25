@@ -16,8 +16,11 @@ namespace Shannon {
 class UpstreamTagger {
    public:
     // Placeholder: Gaussian smearing until the UBT digitisation model exists
-    ::SHiP::UBTHit digitise(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
-        return {.recHit = smearer_.smear(sim_hit, rng)};
+    ::SHiP::UBTHit digitise(::SHiP::SimHit const& sim_hit, double const& time_offset, PhiloxRng& rng) const {
+        ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
+        returnHit.time = time_offset + sim_hit.time;
+
+        return {.recHit = returnHit};
     }
 
    private:
