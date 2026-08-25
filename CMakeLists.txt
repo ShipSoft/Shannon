@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(shannon LANGUAGES CXX)
+project(shannon VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,6 +29,9 @@ find_package(
     COMPONENTS Core RIO Hist MathCore ROOTNTuple
 )
 
+# The config file with versions etc
+configure_file(ShannonConfig.h.in ShannonConfig.h)
+
 # Sim file reader plugin
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
 target_link_libraries(
@@ -38,9 +41,10 @@ target_link_libraries(
 
 # Digitisation plugin
 add_library(digitise_hits MODULE src/digitise_hits.cpp)
-
 target_include_directories(
     digitise_hits
+    PUBLIC
+    "${PROJECT_BINARY_DIR}"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 target_include_directories(

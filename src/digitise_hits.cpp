@@ -15,6 +15,8 @@
 #include <tuple>
 #include <type_traits>
 
+#include "ShannonConfig.h"
+
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
@@ -97,6 +99,7 @@ class Digitiser {
 }  // namespace
 
 PHLEX_REGISTER_ALGORITHMS(m, config) {
+    printVersion();
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
