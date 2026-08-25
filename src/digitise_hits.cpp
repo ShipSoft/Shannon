@@ -39,6 +39,105 @@ using namespace phlex;
 
 namespace {
 
+class megaNum {
+   public:
+    megaNum() : m_base(0), m_exponent(0) {}
+
+    explicit megaNum(const double& inNum) {
+        if (inNum == 0) {
+            m_base = 0.0;
+            m_exponent = 0;
+            return;
+        }
+        m_exponent = static_cast<int>(std::floor(std::log10(static_cast<double>(inNum))));
+        m_base = static_cast<double>(inNum) / std::pow(10.0, m_exponent);
+        normalise();
+    };
+
+    explicit megaNum(int value) : megaNum(static_cast<double>(value)) {}
+
+    megaNum(const double& _base, const int& _expo) : m_base(_base), m_exponent(_expo) {
+        normalise();
+    }
+
+    operator double() { return m_base * pow(10., m_exponent); }
+
+    megaNum operator+(const megaNum& rhs) const {
+        if (m_base == 0.0)
+            return rhs;
+        if (rhs.m_base == 0.0)
+            return *this;
+
+        megaNum out;
+        int diff = m_exponent - rhs.m_exponent;
+
+        if (diff >= 0) {
+            out.m_exponent = m_exponent;
+            out.m_base = m_base + rhs.m_base * std::pow(10.0, -diff);
+        } else {
+            out.m_exponent = rhs.m_exponent;
+            out.m_base = m_base * std::pow(10.0, diff) + rhs.m_base;
+        }
+        out.normalise();
+        return out;
+    }
+
+    megaNum operator-(const megaNum& rhs) const {
+        if (m_base == 0.0)
+            return rhs;
+        if (rhs.m_base == 0.0)
+            return *this;
+
+        megaNum out;
+        int diff = m_exponent - rhs.m_exponent;
+
+        if (diff >= 0) {
+            out.m_exponent = m_exponent;
+            out.m_base = m_base - rhs.m_base * std::pow(10.0, -diff);
+        } else {
+            out.m_exponent = rhs.m_exponent;
+            out.m_base = m_base * std::pow(10.0, diff) - rhs.m_base;
+        }
+        out.normalise();
+        return out;
+    }
+
+    megaNum operator/(const megaNum& rhs) const {
+        if (rhs.m_base == 0.0)
+            throw std::runtime_error("Division by zero");
+        megaNum returnNum(m_base / rhs.m_base, m_exponent - rhs.m_exponent);
+        returnNum.normalise();
+        return returnNum;
+    }
+
+    megaNum operator*(const megaNum& rhs) const {
+        megaNum returnNum(m_base * rhs.m_base, m_exponent + rhs.m_exponent);
+        returnNum.normalise();
+        return returnNum;
+    }
+
+    int getExpo() { return m_exponent; }
+    double getBase() { return m_base; }
+
+   private:
+    void normalise() {
+        if (m_base == 0.0) {
+            m_exponent = 0;
+            return;
+        }
+        while (std::abs(m_base) >= 10.0) {
+            m_base /= 10.0;
+            ++m_exponent;
+        }
+        while (std::abs(m_base) < 1.0) {
+            m_base *= 10.0;
+            --m_exponent;
+        }
+    }
+    int m_exponent = 1;
+    double m_base = 0.;
+};
+
 // Stream selector separating the digitiser's draws from other users of the
 // same seed (cf. PhiloxRng's key_hi parameter).
 constexpr std::uint32_t digitise_stream = 0xD161715E;
@@ -100,9 +199,11 @@ class Digitiser {
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
-    auto const pot_sim = static_cast<double>(config.get<int>("pot", 10000));
+    auto const pot_sim = static_cast<megaNum>(config.get<int>("pot", 10000));
+    megaNum spillTime(1.2, 9);
+    megaNum spillPoT(4., 13);
 
-    double high_time = 1.2e9 * pot_sim / 4.e13;
+    double high_time = spillTime * pot_sim / spillPoT;
 
     m.transform(
          "digitise_hits",
