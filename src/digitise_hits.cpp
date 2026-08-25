@@ -152,8 +152,8 @@ using DigitisedHits = std::tuple<std::vector<::SHiP::UBTHit>, std::vector<::SHiP
 class Digitiser {
    public:
     [[nodiscard]]
-    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits, const double& time_offset,
-                             Shannon::PhiloxRng& rng) const {
+    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits,
+                             const double& event_time_offset, Shannon::PhiloxRng& rng) const {
         DigitisedHits result;
         for (auto const& sim_hit : sim_hits) {
             std::visit(
@@ -162,25 +162,25 @@ class Digitiser {
                     std::get<std::vector<Hit>>(result).push_back(
                         std::forward<decltype(concrete_hit)>(concrete_hit));
                 },
-                digitise(sim_hit, time_offset, rng));
+                digitise(sim_hit, event_time_offset, rng));
         }
         return result;
     }
 
     [[nodiscard]]
-    DigitisedHit digitise(::SHiP::SimHit const& hit, double const& time_offset,
+    DigitisedHit digitise(::SHiP::SimHit const& hit, double const& event_time_offset,
                           Shannon::PhiloxRng& rng) const {
         switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
             case SHiP::detector_id::UpstreamTagger:
-                return upstream_tagger_.digitise(hit, time_offset, rng);
+                return upstream_tagger_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::SurroundTagger:
-                return surround_tagger_.digitise(hit, time_offset, rng);
+                return surround_tagger_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::StrawTubes:
-                return straw_tubes_.digitise(hit, time_offset, rng);
+                return straw_tubes_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::Calorimeter:
-                return calorimeter_.digitise(hit, time_offset, rng);
+                return calorimeter_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::TimingDetector:
-                return timing_detector_.digitise(hit, time_offset, rng);
+                return timing_detector_.digitise(hit, event_time_offset, rng);
         }
         throw std::runtime_error{"No digitiser registered for detector ID " +
                                  std::to_string(hit.detectorId)};
@@ -199,19 +199,20 @@ class Digitiser {
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
-    auto const pot_sim = static_cast<megaNum>(config.get<int>("pot", 10000));
-    megaNum spillTime(1.2, 9);
-    megaNum spillPoT(4., 13);
+    auto const pot_sim =
+        static_cast<megaNum>(config.get<int>("pot", 10000));  // Simulated protons on target
+    megaNum spillTime(1.2, 9);                                // Total length of a spill in ns
+    megaNum spillPoT(4., 13);                                 // PoT per spill
 
-    double high_time = spillTime * pot_sim / spillPoT;
+    double high_time = spillTime * pot_sim / spillPoT;  // Length of time simulated
 
     m.transform(
          "digitise_hits",
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
                                                     std::vector<::SHiP::SimHit> const& sim_hits) {
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
-             double time_offset = rng.uniform(0.0, high_time);
-             return digitiser(sim_hits, time_offset, rng);
+             double event_time_offset = rng.uniform(0.0, high_time);
+             return digitiser(sim_hits, event_time_offset, rng);
          },
          concurrency::unlimited)
         .input_family(
