@@ -8,14 +8,13 @@
 // A fresh counter-based RNG is seeded per event from (seed, event number),
 // so results are reproducible under full concurrency.
 
+#include "ShannonConfig.h"
 #include "phlex/core/product_selector.hpp"
 #include "phlex/model/data_cell_index.hpp"
 #include "phlex/module.hpp"
 
 #include <tuple>
 #include <type_traits>
-
-#include "ShannonConfig.h"
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>

@@ -43,8 +43,7 @@ target_link_libraries(
 add_library(digitise_hits MODULE src/digitise_hits.cpp)
 target_include_directories(
     digitise_hits
-    PUBLIC
-    "${PROJECT_BINARY_DIR}"
+    PUBLIC "${PROJECT_BINARY_DIR}"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 target_include_directories(
