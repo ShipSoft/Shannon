@@ -69,7 +69,8 @@ class Digitiser {
     }
 
     [[nodiscard]]
-    DigitisedHit digitise(::SHiP::SimHit const& hit, double const& time_offset, Shannon::PhiloxRng& rng) const {
+    DigitisedHit digitise(::SHiP::SimHit const& hit, double const& time_offset,
+                          Shannon::PhiloxRng& rng) const {
         switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
             case SHiP::detector_id::UpstreamTagger:
                 return upstream_tagger_.digitise(hit, time_offset, rng);
@@ -101,14 +102,14 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
     auto const pot_sim = static_cast<std::uint32_t>(config.get<int>("pot", 10000));
 
-    double high_time = 1.2e9 * double(pot_sim)/4.e13;
+    double high_time = 1.2e9 * double(pot_sim) / 4.e13;
 
     m.transform(
          "digitise_hits",
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
-                                         std::vector<::SHiP::SimHit> const& sim_hits) {
+                                                    std::vector<::SHiP::SimHit> const& sim_hits) {
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
-             double time_offset =  rng.uniform(0.0, high_time);
+             double time_offset = rng.uniform(0.0, high_time);
              return digitiser(sim_hits, time_offset, rng);
          },
          concurrency::unlimited)

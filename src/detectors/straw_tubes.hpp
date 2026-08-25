@@ -16,7 +16,8 @@ namespace Shannon {
 class StrawTubes {
    public:
     // Placeholder: Gaussian smearing until the straw-tube digitisation model exists
-    ::SHiP::StrawTubesHit digitise(::SHiP::SimHit const& sim_hit, double const& time_offset, PhiloxRng& rng) const {
+    ::SHiP::StrawTubesHit digitise(::SHiP::SimHit const& sim_hit, double const& time_offset,
+                                   PhiloxRng& rng) const {
         ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
         returnHit.time = time_offset + sim_hit.time;
 
