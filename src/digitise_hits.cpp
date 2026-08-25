@@ -100,9 +100,9 @@ class Digitiser {
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
-    auto const pot_sim = static_cast<std::uint32_t>(config.get<int>("pot", 10000));
+    auto const pot_sim = static_cast<double>(config.get<int>("pot", 10000));
 
-    double high_time = 1.2e9 * double(pot_sim) / 4.e13;
+    double high_time = 1.2e9 * pot_sim / 4.e13;
 
     m.transform(
          "digitise_hits",
