@@ -8,6 +8,7 @@
 // A fresh counter-based RNG is seeded per event from (seed, event number),
 // so results are reproducible under full concurrency.
 
+#include "ShannonConfig.h"
 #include "phlex/core/product_selector.hpp"
 #include "phlex/model/data_cell_index.hpp"
 #include "phlex/module.hpp"
@@ -97,6 +98,7 @@ class Digitiser {
 }  // namespace
 
 PHLEX_REGISTER_ALGORITHMS(m, config) {
+    printVersion();
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
