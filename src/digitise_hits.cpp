@@ -69,38 +69,38 @@ class megaNum {
         if (rhs.m_base == 0.0)
             return *this;
 
-        megaNum out;
+        megaNum returnNum;
         int diff = m_exponent - rhs.m_exponent;
 
         if (diff >= 0) {
-            out.m_exponent = m_exponent;
-            out.m_base = m_base + rhs.m_base * std::pow(10.0, -diff);
+            returnNum.m_exponent = m_exponent;
+            returnNum.m_base = m_base + rhs.m_base * std::pow(10.0, -diff);
         } else {
-            out.m_exponent = rhs.m_exponent;
-            out.m_base = m_base * std::pow(10.0, diff) + rhs.m_base;
+            returnNum.m_exponent = rhs.m_exponent;
+            returnNum.m_base = m_base * std::pow(10.0, diff) + rhs.m_base;
         }
-        out.normalise();
-        return out;
+        returnNum.normalise();
+        return returnNum;
     }
 
     megaNum operator-(const megaNum& rhs) const {
         if (m_base == 0.0)
-            return rhs;
+            return megaNum{-rhs.m_base, rhs.m_exponent};
         if (rhs.m_base == 0.0)
             return *this;
 
-        megaNum out;
+        megaNum returnNum;
         int diff = m_exponent - rhs.m_exponent;
 
         if (diff >= 0) {
-            out.m_exponent = m_exponent;
-            out.m_base = m_base - rhs.m_base * std::pow(10.0, -diff);
+            returnNum.m_exponent = m_exponent;
+            returnNum.m_base = m_base - rhs.m_base * std::pow(10.0, -diff);
         } else {
-            out.m_exponent = rhs.m_exponent;
-            out.m_base = m_base * std::pow(10.0, diff) - rhs.m_base;
+            returnNum.m_exponent = rhs.m_exponent;
+            returnNum.m_base = m_base * std::pow(10.0, diff) - rhs.m_base;
         }
-        out.normalise();
-        return out;
+        returnNum.normalise();
+        return returnNum;
     }
 
     megaNum operator/(const megaNum& rhs) const {
