@@ -23,6 +23,7 @@
 #include <SHiP/detectors/TimeDetHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
 #include <SHiP/detectors/detector_id.hpp>
+#include <boost/multiprecision/cpp_dec_float.hpp>
 #include <cstdint>
 #include <detectors/calorimeter.hpp>
 #include <detectors/straw_tubes.hpp>
@@ -40,108 +41,10 @@ using namespace phlex;
 
 namespace {
 
-class megaNum {
-   public:
-    megaNum() : m_base(0), m_exponent(0) {}
-
-    explicit megaNum(const double& inNum) {
-        if (inNum == 0) {
-            m_base = 0.0;
-            m_exponent = 0;
-            return;
-        }
-        m_exponent = static_cast<int>(std::floor(std::log10(static_cast<double>(inNum))));
-        m_base = static_cast<double>(inNum) / std::pow(10.0, m_exponent);
-        normalise();
-    };
-
-    explicit megaNum(int value) : megaNum(static_cast<double>(value)) {}
-
-    megaNum(const double& _base, const int& _expo) : m_base(_base), m_exponent(_expo) {
-        normalise();
-    }
-
-    operator double() { return m_base * pow(10., m_exponent); }
-
-    megaNum operator+(const megaNum& rhs) const {
-        if (m_base == 0.0)
-            return rhs;
-        if (rhs.m_base == 0.0)
-            return *this;
-
-        megaNum returnNum;
-        int diff = m_exponent - rhs.m_exponent;
-
-        if (diff >= 0) {
-            returnNum.m_exponent = m_exponent;
-            returnNum.m_base = m_base + rhs.m_base * std::pow(10.0, -diff);
-        } else {
-            returnNum.m_exponent = rhs.m_exponent;
-            returnNum.m_base = m_base * std::pow(10.0, diff) + rhs.m_base;
-        }
-        returnNum.normalise();
-        return returnNum;
-    }
-
-    megaNum operator-(const megaNum& rhs) const {
-        if (m_base == 0.0)
-            return megaNum{-rhs.m_base, rhs.m_exponent};
-        if (rhs.m_base == 0.0)
-            return *this;
-
-        megaNum returnNum;
-        int diff = m_exponent - rhs.m_exponent;
-
-        if (diff >= 0) {
-            returnNum.m_exponent = m_exponent;
-            returnNum.m_base = m_base - rhs.m_base * std::pow(10.0, -diff);
-        } else {
-            returnNum.m_exponent = rhs.m_exponent;
-            returnNum.m_base = m_base * std::pow(10.0, diff) - rhs.m_base;
-        }
-        returnNum.normalise();
-        return returnNum;
-    }
-
-    megaNum operator/(const megaNum& rhs) const {
-        if (rhs.m_base == 0.0)
-            throw std::runtime_error("Division by zero");
-        megaNum returnNum(m_base / rhs.m_base, m_exponent - rhs.m_exponent);
-        returnNum.normalise();
-        return returnNum;
-    }
-
-    megaNum operator*(const megaNum& rhs) const {
-        megaNum returnNum(m_base * rhs.m_base, m_exponent + rhs.m_exponent);
-        returnNum.normalise();
-        return returnNum;
-    }
-
-    int getExpo() { return m_exponent; }
-    double getBase() { return m_base; }
-
-   private:
-    void normalise() {
-        if (m_base == 0.0) {
-            m_exponent = 0;
-            return;
-        }
-        while (std::abs(m_base) >= 10.0) {
-            m_base /= 10.0;
-            ++m_exponent;
-        }
-        while (std::abs(m_base) < 1.0) {
-            m_base *= 10.0;
-            --m_exponent;
-        }
-    }
-    int m_exponent = 1;
-    double m_base = 0.;
-};
-
-// Stream selector separating the digitiser's draws from other users of the
-// same seed (cf. PhiloxRng's key_hi parameter).
+// Stream selectors separating different draws on the same seed (cf.
+// PhiloxRng's key_hi parameter) so they're uncorrelated.
 constexpr std::uint32_t digitise_stream = 0xD161715E;
+constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 
 using DigitisedHit = std::variant<::SHiP::UBTHit, ::SHiP::SBTHit, ::SHiP::StrawTubesHit,
                                   ::SHiP::CaloHit, ::SHiP::TimeDetHit>;
@@ -153,8 +56,8 @@ using DigitisedHits = std::tuple<std::vector<::SHiP::UBTHit>, std::vector<::SHiP
 class Digitiser {
    public:
     [[nodiscard]]
-    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits,
-                             const double& event_time_offset, Shannon::PhiloxRng& rng) const {
+    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits, double event_time_offset,
+                             Shannon::PhiloxRng& rng) const {
         DigitisedHits result;
         for (auto const& sim_hit : sim_hits) {
             std::visit(
@@ -169,7 +72,7 @@ class Digitiser {
     }
 
     [[nodiscard]]
-    DigitisedHit digitise(::SHiP::SimHit const& hit, double const& event_time_offset,
+    DigitisedHit digitise(::SHiP::SimHit const& hit, double event_time_offset,
                           Shannon::PhiloxRng& rng) const {
         switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
             case SHiP::detector_id::UpstreamTagger:
@@ -201,19 +104,23 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     printVersion();
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
-    auto const pot_sim =
-        static_cast<megaNum>(config.get<int>("pot", 10000));  // Simulated protons on target
-    megaNum spillTime(1.2, 9);                                // Total length of a spill in ns
-    megaNum spillPoT(4., 13);                                 // PoT per spill
 
-    double high_time = spillTime * pot_sim / spillPoT;  // Length of time simulated
+    using BigFloat = boost::multiprecision::cpp_dec_float_50;
+    BigFloat const pot_sim{config.get<int>("pot", 10000)};  // Simulated protons on target
+    BigFloat const spill_time_ns{"1.2e9"};                  // Total length of a spill in ns
+    BigFloat const nominal_pot_per_spill{"4e13"};           // PoT per spill
+
+    double const high_time = static_cast<double>(
+        spill_time_ns * pot_sim / nominal_pot_per_spill);  // Length of time simulated
 
     m.transform(
          "digitise_hits",
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
                                                     std::vector<::SHiP::SimHit> const& sim_hits) {
+             Shannon::PhiloxRng time_rng{seed, time_offset_stream,
+                                         static_cast<std::uint32_t>(id.number())};
+             double event_time_offset = time_rng.uniform(0.0, high_time);
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
-             double event_time_offset = rng.uniform(0.0, high_time);
              return digitiser(sim_hits, event_time_offset, rng);
          },
          concurrency::unlimited)

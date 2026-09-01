@@ -51,7 +51,10 @@ target_include_directories(
     SYSTEM
     PRIVATE "${Random123_INCLUDE_DIR}"
 )
-target_link_libraries(digitise_hits PRIVATE phlex::module SHiP::SHiPDataModel)
+target_link_libraries(
+    digitise_hits
+    PRIVATE phlex::module SHiP::SHiPDataModel Boost::headers
+)
 
 # Digitised output module plugin
 add_library(digitised_output_module MODULE src/digitised_output_module.cpp)
