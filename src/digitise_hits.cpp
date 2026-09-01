@@ -106,7 +106,7 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
     using BigFloat = boost::multiprecision::cpp_dec_float_50;
-    BigFloat const pot_sim{config.get<int>("pot", 10000)};  // Simulated protons on target
+    BigFloat const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
     BigFloat const spill_time_ns{"1.2e9"};                  // Total length of a spill in ns
     BigFloat const nominal_pot_per_spill{"4e13"};           // PoT per spill
 
