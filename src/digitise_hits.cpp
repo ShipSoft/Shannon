@@ -107,8 +107,8 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
 
     using BigFloat = boost::multiprecision::cpp_dec_float_50;
     BigFloat const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
-    BigFloat const spill_time_ns{"1.2e9"};                  // Total length of a spill in ns
-    BigFloat const nominal_pot_per_spill{"4e13"};           // PoT per spill
+    BigFloat const spill_time_ns{"1.2e9"};                     // Total length of a spill in ns
+    BigFloat const nominal_pot_per_spill{"4e13"};              // PoT per spill
 
     double const high_time = static_cast<double>(
         spill_time_ns * pot_sim / nominal_pot_per_spill);  // Length of time simulated
