@@ -8,6 +8,7 @@
 
 #include "gaussian_smearer.hpp"
 
+#include <SHiP/RecHit.hpp>
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/StrawTubesHit.hpp>
 
@@ -19,7 +20,7 @@ class StrawTubes {
     ::SHiP::StrawTubesHit digitise(::SHiP::SimHit const& sim_hit, double time_offset,
                                    PhiloxRng& rng) const {
         ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
-        returnHit.time = time_offset + sim_hit.time;
+        returnHit.time += time_offset;
 
         return {.recHit = returnHit};
     }
