@@ -40,9 +40,10 @@ using namespace phlex;
 
 namespace {
 
-// Stream selector separating the digitiser's draws from other users of the
-// same seed (cf. PhiloxRng's key_hi parameter).
+// Stream selectors separating different draws on the same seed (cf.
+// PhiloxRng's key_hi parameter) so they're uncorrelated.
 constexpr std::uint32_t digitise_stream = 0xD161715E;
+constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 
 using DigitisedHit = std::variant<::SHiP::UBTHit, ::SHiP::SBTHit, ::SHiP::StrawTubesHit,
                                   ::SHiP::CaloHit, ::SHiP::TimeDetHit>;
@@ -54,7 +55,7 @@ using DigitisedHits = std::tuple<std::vector<::SHiP::UBTHit>, std::vector<::SHiP
 class Digitiser {
    public:
     [[nodiscard]]
-    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits,
+    DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits, double event_time_offset,
                              Shannon::PhiloxRng& rng) const {
         DigitisedHits result;
         for (auto const& sim_hit : sim_hits) {
@@ -64,24 +65,25 @@ class Digitiser {
                     std::get<std::vector<Hit>>(result).push_back(
                         std::forward<decltype(concrete_hit)>(concrete_hit));
                 },
-                digitise(sim_hit, rng));
+                digitise(sim_hit, event_time_offset, rng));
         }
         return result;
     }
 
     [[nodiscard]]
-    DigitisedHit digitise(::SHiP::SimHit const& hit, Shannon::PhiloxRng& rng) const {
+    DigitisedHit digitise(::SHiP::SimHit const& hit, double event_time_offset,
+                          Shannon::PhiloxRng& rng) const {
         switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
             case SHiP::detector_id::UpstreamTagger:
-                return upstream_tagger_.digitise(hit, rng);
+                return upstream_tagger_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::SurroundTagger:
-                return surround_tagger_.digitise(hit, rng);
+                return surround_tagger_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::StrawTubes:
-                return straw_tubes_.digitise(hit, rng);
+                return straw_tubes_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::Calorimeter:
-                return calorimeter_.digitise(hit, rng);
+                return calorimeter_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::TimingDetector:
-                return timing_detector_.digitise(hit, rng);
+                return timing_detector_.digitise(hit, event_time_offset, rng);
         }
         throw std::runtime_error{"No digitiser registered for detector ID " +
                                  std::to_string(hit.detectorId)};
@@ -102,12 +104,25 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
+    double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
+    double const spill_time_ns = 1.2e9;                      // Total length of a spill in ns
+    double const nominal_pot_per_spill = 4e13;               // PoT per spill
+
+    if (pot_sim > nominal_pot_per_spill)
+        throw std::runtime_error("Provided simulated PoT is greater than a single spill");
+
+    double const high_time =
+        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
+
     m.transform(
          "digitise_hits",
-         [seed, digitiser = Digitiser{}](data_cell_index const& id,
-                                         std::vector<::SHiP::SimHit> const& sim_hits) {
+         [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
+                                                    std::vector<::SHiP::SimHit> const& sim_hits) {
+             Shannon::PhiloxRng time_rng{seed, time_offset_stream,
+                                         static_cast<std::uint32_t>(id.number())};
+             double event_time_offset = time_rng.uniform53(0.0, high_time);
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
-             return digitiser(sim_hits, rng);
+             return digitiser(sim_hits, event_time_offset, rng);
          },
          concurrency::unlimited)
         .input_family(

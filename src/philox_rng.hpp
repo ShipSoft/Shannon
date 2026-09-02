@@ -45,6 +45,25 @@ class PhiloxRng {
 
     double uniform(double lo, double hi) { return lo + (hi - lo) * uniform(); }
 
+    // Higher-resolution draw: combines two consecutive 32-bit Philox words
+    // into a 64-bit integer and keeps the top 53 bits, matching double's
+    // full mantissa precision (cf. uniform(), which only has 32 bits of
+    // resolution — too coarse when the sampled range spans many orders of
+    // magnitude, e.g. ps-scale jitter within a multi-second spill).
+    double uniform53() {
+        if (idx_ > 2) {  // fewer than 2 words left in the buffer
+            buf_ = rng_(ctr_, key_);
+            ctr_[0]++;
+            idx_ = 0;
+        }
+        std::uint64_t const hi = buf_[idx_++];
+        std::uint64_t const lo = buf_[idx_++];
+        std::uint64_t const bits = (hi << 32) | lo;
+        return static_cast<double>(bits >> 11) * (1.0 / 9007199254740992.0);  // top 53 bits / 2^53
+    }
+
+    double uniform53(double lo, double hi) { return lo + (hi - lo) * uniform53(); }
+
     // Box–Muller transform; uses the cosine branch only, drawing two
     // uniforms per deviate. uniform() returns [0, 1), so flip the first
     // draw to (0, 1] to keep the log argument nonzero.

@@ -8,6 +8,7 @@
 
 #include "gaussian_smearer.hpp"
 
+#include <SHiP/RecHit.hpp>
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/TimeDetHit.hpp>
 
@@ -16,8 +17,12 @@ namespace Shannon {
 class TimingDetector {
    public:
     // Placeholder: Gaussian smearing until the timing-detector digitisation model exists
-    ::SHiP::TimeDetHit digitise(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
-        return {.recHit = smearer_.smear(sim_hit, rng)};
+    ::SHiP::TimeDetHit digitise(::SHiP::SimHit const& sim_hit, double time_offset,
+                                PhiloxRng& rng) const {
+        ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
+        returnHit.time += time_offset;
+
+        return {.recHit = returnHit};
     }
 
    private:

@@ -8,6 +8,7 @@
 
 #include "gaussian_smearer.hpp"
 
+#include <SHiP/RecHit.hpp>
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
 
@@ -16,8 +17,11 @@ namespace Shannon {
 class Calorimeter {
    public:
     // Placeholder: Gaussian smearing until the calorimeter digitisation model exists
-    ::SHiP::CaloHit digitise(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
-        return {.recHit = smearer_.smear(sim_hit, rng)};
+    ::SHiP::CaloHit digitise(::SHiP::SimHit const& sim_hit, double time_offset,
+                             PhiloxRng& rng) const {
+        ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
+        returnHit.time += time_offset;
+        return {.recHit = returnHit};
     }
 
    private:
