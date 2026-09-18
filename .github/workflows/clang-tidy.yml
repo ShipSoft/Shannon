@@ -1,0 +1,22 @@
+name: clang-tidy
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: clang-tidy-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  clang-tidy:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ShipSoft/.github/.github/workflows/clang-tidy.yml@main
+    with:
+      # Soak period: annotate the findings on changed lines without failing the
+      # job, so the first few pull requests show what the shared config makes of
+      # this repository before it starts gating. Drop this line to turn the
+      # ratchet on.
+      fail-on-new: false

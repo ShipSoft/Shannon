@@ -16,7 +16,15 @@ Thank you for your interest in contributing to Shannon! As part of the SHiP Coll
    ```
 4. **Branching**: Create a feature branch for your changes.
 5. **Coding Standards**:
-   - Follow the existing C++ style (enforced by `clang-format` and `cpplint`).
+   - Follow the existing C++ style (formatting is enforced by `clang-format`).
+   - C++ is checked against the [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
+     by `clang-tidy`, using the shared `.clang-tidy` synced from
+     [ShipSoft/.github](https://github.com/ShipSoft/.github/tree/main/sync). CI only
+     fails on findings that land on lines your patch changes, so you are never asked
+     to clean up code you did not touch. Check locally with:
+     ```bash
+     pixi run clang-tidy-diff
+     ```
    - Ensure all files have the correct SPDX license headers (REUSE compliant).
 6. **Commits**: We follow [Conventional Commits](https://www.conventionalcommits.org/). This helps in automated changelog generation.
    - `feat: ...` for new features
