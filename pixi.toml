@@ -31,6 +31,15 @@ cmake = ">=3.27"
 ninja = "*"
 cxx-compiler = "*"
 
+# Static analysis. clang-tidy lives here rather than in [feature.lint] because
+# it replays the commands in compile_commands.json and so needs the same
+# headers the compiler saw; feature.lint is a separate solve group and could
+# drift from them. clang-tools provides clang-tidy but does not depend on the
+# clang package that ships clang's own builtin headers (stddef.h and friends),
+# and without those every translation unit fails to parse.
+clang = "*"
+clang-tools = "*"
+
 [activation]
 scripts = ["activate.sh"]
 
@@ -50,6 +59,23 @@ test = { cmd = "ctest --test-dir build --output-on-failure", depends-on = ["buil
 smoke = { cmd = "scripts/smoke.sh", depends-on = ["build"] }
 clean = "rm -rf build"
 
+# Static analysis, mirroring ShipSoft/.github's clang-tidy.yml. `clang-tidy`
+# reports the whole tree; `clang-tidy-diff` reports only what CI gates on,
+# namely findings on lines you changed relative to main. -source-filter is a
+# Python regex (run-clang-tidy is a Python script), unlike the llvm::Regex
+# patterns in .clang-tidy. These use TOML literal strings so the backslashes
+# survive.
+clang-tidy = { cmd = '''
+run-clang-tidy -p build -j $(nproc) -quiet \
+    -source-filter '^(?!.*(/G__|Dict[.]cxx|/_deps/|/CMakeFiles/)).*' \
+    -extra-arg=-isystem$CONDA_PREFIX/include
+''', depends-on = ["build"] }
+# clang-tidy-diff.py ships with clang-tools but is not on PATH.
+clang-tidy-diff = { cmd = '''
+git diff --unified=0 --diff-filter=d origin/main HEAD -- '*.cpp' '*.hpp' '*.cxx' '*.h' \
+  | python $CONDA_PREFIX/share/clang/clang-tidy-diff.py -p1 -path build -j $(nproc) \
+      -quiet -only-check-in-db -extra-arg=-isystem$CONDA_PREFIX/include
+''', depends-on = ["build"] }
 
 [feature.bench.dependencies]
 hyperfine = "*"
@@ -72,7 +98,6 @@ commitizen = "*"
 # is stuck at 1.6.0 (a different, stale fork), and its gersemi (0.24.0) lags the
 # repo's 0.27.7 and would reflow CMake files.
 [feature.lint.pypi-dependencies]
-cpplint = "==2.0.2"
 gersemi = "==0.27.7"
 
 [feature.lint.tasks]
