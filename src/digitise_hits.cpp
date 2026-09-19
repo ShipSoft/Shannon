@@ -117,17 +117,19 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     m.transform(
          "digitise_hits",
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
-                                                    std::vector<::SHiP::SimHit> const& sim_hits) {
-             Shannon::PhiloxRng time_rng{seed, time_offset_stream,
-                                         static_cast<std::uint32_t>(id.number())};
-             double event_time_offset = time_rng.uniform53(0.0, high_time);
+                                                    std::vector<::SHiP::SimHit> const& sim_hits,
+                                                    double const event_time_offset) {
+             //Shannon::PhiloxRng time_rng{seed, time_offset_stream,
+             //                            static_cast<std::uint32_t>(id.number())};
+             //double event_time_offset = time_rng.uniform53(0.0, high_time);
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
              return digitiser(sim_hits, event_time_offset, rng);
          },
          concurrency::unlimited)
         .input_family(
             product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "id"},
-            product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "sim_hits"})
+            product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "sim_hits"},
+            product_selector{.creator = "rntuple_source", .layer = layer, .suffix = "time"})
         // Positional: must match the element order of the DigitisedHits tuple.
         .output_product_suffixes("ubt_hits", "sbt_hits", "straw_tubes_hits", "calorimeter_hits",
                                  "timing_detector_hits");
