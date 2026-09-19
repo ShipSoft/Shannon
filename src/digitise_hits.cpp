@@ -119,9 +119,6 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
                                                     std::vector<::SHiP::SimHit> const& sim_hits,
                                                     double const event_time_offset) {
-             //Shannon::PhiloxRng time_rng{seed, time_offset_stream,
-             //                            static_cast<std::uint32_t>(id.number())};
-             //double event_time_offset = time_rng.uniform53(0.0, high_time);
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
              return digitiser(sim_hits, event_time_offset, rng);
          },
