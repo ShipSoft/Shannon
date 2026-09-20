@@ -89,10 +89,10 @@ class PhiloxRng {
     }
 
     // An approximation of a beta distribution
-    double beta_dist(double alpha, double zeta){
+    double beta_dist(double alpha, double zeta) {
         const double X = gamma_wh(alpha);
         const double Y = gamma_wh(zeta);
-        return X/(X+Y);
+        return X / (X + Y);
     }
 
    private:
@@ -101,7 +101,6 @@ class PhiloxRng {
     r123::Philox4x32::ctr_type ctr_;
     r123::Philox4x32::ctr_type buf_{};
     int idx_ = 4;
-
 };
 
 }  // namespace Shannon
