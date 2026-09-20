@@ -74,12 +74,34 @@ class PhiloxRng {
                sigma * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * std::numbers::pi * u2);
     }
 
+    // An approximation of a gamma function
+    double gamma_wh(double alpha, double scale = 1) {
+        const double a = 1.0 - 1.0 / (9.0 * alpha);
+        const double b = 1.0 / (3.0 * std::sqrt(alpha));
+
+        double x;
+
+        do {
+            x = a + b * gaussian(0.0, 1.0);
+        } while (x <= 0.0);
+
+        return scale * alpha * x * x * x;
+    }
+
+    // An approximation of a beta distribution
+    double beta_dist(double alpha, double zeta){
+        const double X = gamma_wh(alpha);
+        const double Y = gamma_wh(zeta);
+        return X/(X+Y);
+    }
+
    private:
     r123::Philox4x32 rng_;
     r123::Philox4x32::key_type key_;
     r123::Philox4x32::ctr_type ctr_;
     r123::Philox4x32::ctr_type buf_{};
     int idx_ = 4;
+
 };
 
 }  // namespace Shannon

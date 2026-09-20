@@ -30,23 +30,20 @@ constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 namespace {
 class ascendingTimeGenerator {
    public:
-    ascendingTimeGenerator(const double& nToGen, const double& maxTime)
-        : m_I(nToGen), m_maxTime(maxTime) {};
+    ascendingTimeGenerator(double nToGen, double maxTime, std::uint32_t seed, std::uint32_t stream)
+        : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {};
     [[nodiscard]]
-    double next(::Shannon::PhiloxRng rng) {
-        if (m_I <= 0)
-            throw std::invalid_argument(
-                "Shannon time randomisation: tried to process an event beyond the anticipated "
-                "number.");
-        m_lnCurrMax += log(rng.uniform53(0., 1.)) / m_I;
-        --m_I;
-        return (1. - exp(m_lnCurrMax)) * m_maxTime;
+    double next(const int evtNumber) {
+        const int k = evtNumber + 1;
+        Shannon::PhiloxRng rng{m_seed, m_stream, static_cast<std::uint32_t>(k)};
+        return rng.beta_dist(k, m_n - k + 1) * m_maxTime;
     }
 
    private:
-    double m_lnCurrMax = 0.;
     double m_maxTime = 0.;
-    int m_I = 0.;
+    int m_n = 0;
+    std::uint32_t m_seed = 0;
+    std::uint32_t m_stream = 0;
 };
 }  // namespace
 
@@ -81,8 +78,8 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     double const high_time =
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
 
-    Shannon::PhiloxRng time_rng{seed, time_offset_stream};
-    auto timeGenerator = std::make_shared<ascendingTimeGenerator>(nEntries, high_time);
+    auto timeGenerator =
+        std::make_shared<ascendingTimeGenerator>(nEntries, high_time, seed, time_offset_stream);
 
     m.provide(
          "read_rntuple",
@@ -113,9 +110,9 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // Provide a random time. Has to be done in serial to keep increasing time order
     m.provide(
          "provide_time",
-         [timeGenerator, time_rng](data_cell_index const& id) -> double {
-             return timeGenerator->next(time_rng);
+         [timeGenerator](data_cell_index const& id) -> double {
+             return timeGenerator->next(id.number());
          },
-         concurrency::serial)
+         concurrency::unlimited)
         .output_product("rntuple_source", "time", layer);
 }
