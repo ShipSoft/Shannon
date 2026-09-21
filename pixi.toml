@@ -82,10 +82,18 @@ run-clang-tidy -p build -j $(nproc) -quiet \
 # files in the compilation database, so a changed *header* is not analysed here.
 # CI maps headers to the translation units that include them. For a header-only
 # change, run `pixi run clang-tidy` or let CI report it.
+#
+# The diff goes to a file and the consumer reads it back, rather than the two
+# being piped: pixi does not run tasks under `set -o pipefail`, so a failing
+# `git diff` (no origin/main in a fresh or shallow clone, say) would otherwise be
+# swallowed. clang-tidy-diff.py accepts the empty input and exits 0, reporting
+# "No relevant changes found" about a tree it never looked at.
 clang-tidy-diff = { cmd = '''
 git diff --unified=0 --diff-filter=d origin/main -- '*.cpp' '*.hpp' '*.cxx' '*.h' \
-  | python $CONDA_PREFIX/share/clang/clang-tidy-diff.py -p1 -path build -j $(nproc) \
-      -quiet -only-check-in-db -extra-arg=-isystem$CONDA_PREFIX/include
+    > build/clang-tidy-diff.patch \
+  && python $CONDA_PREFIX/share/clang/clang-tidy-diff.py -p1 -path build -j $(nproc) \
+      -quiet -only-check-in-db -extra-arg=-isystem$CONDA_PREFIX/include \
+      < build/clang-tidy-diff.patch
 ''', depends-on = ["build"] }
 
 [feature.bench.dependencies]
