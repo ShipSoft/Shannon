@@ -38,6 +38,10 @@ target_link_libraries(
     read_sim_file
     PRIVATE phlex::module SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
 )
+target_include_directories(
+    read_sim_file
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 
 # Digitisation plugin
 add_library(digitise_hits MODULE src/digitise_hits.cpp)

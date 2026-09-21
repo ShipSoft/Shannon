@@ -18,11 +18,34 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
 #include <memory>
+#include <philox_rng.hpp>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 using namespace phlex;
 using namespace phlex::experimental::literals;
+constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
+
+namespace {
+class ascendingTimeGenerator {
+   public:
+    ascendingTimeGenerator(double nToGen, double maxTime, std::uint32_t seed, std::uint32_t stream)
+        : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {};
+    [[nodiscard]]
+    double next(const int evtNumber) {
+        const int k = evtNumber + 1;
+        Shannon::PhiloxRng rng{m_seed, m_stream, static_cast<std::uint32_t>(k)};
+        return rng.beta_dist(k, m_n - k + 1) * m_maxTime;
+    }
+
+   private:
+    double m_maxTime = 0.;
+    int m_n = 0;
+    std::uint32_t m_seed = 0;
+    std::uint32_t m_stream = 0;
+};
+}  // namespace
 
 PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const input_file = config.get<std::string>("input_file");
@@ -31,7 +54,9 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         config.get<std::string>("particles_field", std::string{"sim_particles"});
     auto const hits_field = config.get<std::string>("hits_field", std::string{"sim_hits"});
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
-
+    double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
+    double const nEntries{
+        config.get<double>("entries", 10000)};  // How many indices you are running over
     // Each provider owns its own reader: providers are separate graph nodes
     // that can run concurrently, and RNTupleReader is not thread-safe.
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
@@ -43,6 +68,18 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
     auto hit_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimHit>>>(
         hit_reader->GetView<std::vector<SHiP::SimHit>>(hits_field));
+
+    double const spill_time_ns = 1.2e9;         // Total length of a spill in ns
+    double const nominal_pot_per_spill = 4e13;  // PoT per spill
+    auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
+    if (pot_sim > nominal_pot_per_spill)
+        throw std::runtime_error("Provided simulated PoT is greater than a single spill");
+
+    double const high_time =
+        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
+
+    auto timeGenerator =
+        std::make_shared<ascendingTimeGenerator>(nEntries, high_time, seed, time_offset_stream);
 
     m.provide(
          "read_rntuple",
@@ -69,4 +106,13 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     m.provide(
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
+
+    // Provide a random time. Has to be done in serial to keep increasing time order
+    m.provide(
+         "provide_time",
+         [timeGenerator](data_cell_index const& id) -> double {
+             return timeGenerator->next(id.number());
+         },
+         concurrency::unlimited)
+        .output_product("rntuple_source", "time", layer);
 }
