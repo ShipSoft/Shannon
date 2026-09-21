@@ -37,8 +37,12 @@ cxx-compiler = "*"
 # drift from them. clang-tools provides clang-tidy but does not depend on the
 # clang package that ships clang's own builtin headers (stddef.h and friends),
 # and without those every translation unit fails to parse.
-clang = "*"
-clang-tools = "*"
+# Both carry the >=19 floor that .clang-tidy's ExcludeHeaderFilterRegex needs,
+# and they have to resolve to the same major: clang-tidy looks for its builtin
+# headers under lib/clang/<major>/include, which is what the clang package
+# supplies. Both come from the same llvm feedstock, so conda keeps them in step.
+clang = ">=19"
+clang-tools = ">=19"
 
 [activation]
 scripts = ["activate.sh"]
@@ -70,9 +74,16 @@ run-clang-tidy -p build -j $(nproc) -quiet \
     -source-filter '^(?!.*(/G__|Dict[.]cxx|/_deps/|/CMakeFiles/)).*' \
     -extra-arg=-isystem$CONDA_PREFIX/include
 ''', depends-on = ["build"] }
-# clang-tidy-diff.py ships with clang-tools but is not on PATH.
+# clang-tidy-diff.py ships with clang-tools but is not on PATH. Diffing against
+# origin/main alone, with no second commit, includes staged and unstaged work, so
+# this sees the patch in your tree rather than only what you have committed.
+#
+# It is a quick check, not the same thing CI does: clang-tidy-diff only looks at
+# files in the compilation database, so a changed *header* is not analysed here.
+# CI maps headers to the translation units that include them. For a header-only
+# change, run `pixi run clang-tidy` or let CI report it.
 clang-tidy-diff = { cmd = '''
-git diff --unified=0 --diff-filter=d origin/main HEAD -- '*.cpp' '*.hpp' '*.cxx' '*.h' \
+git diff --unified=0 --diff-filter=d origin/main -- '*.cpp' '*.hpp' '*.cxx' '*.h' \
   | python $CONDA_PREFIX/share/clang/clang-tidy-diff.py -p1 -path build -j $(nproc) \
       -quiet -only-check-in-db -extra-arg=-isystem$CONDA_PREFIX/include
 ''', depends-on = ["build"] }
