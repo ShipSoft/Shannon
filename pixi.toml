@@ -107,17 +107,17 @@ linux-perf = "*"
 [feature.lint.dependencies]
 prek = "*"
 python = ">=3.11"
-clang-format = "22.*"
+clang-format = "23.*"
 codespell = "*"
 reuse = "*"
 cffconvert = "*"
 commitizen = "*"
 
 # Pinned via PyPI to match the previous hook revs exactly: conda-forge's cpplint
-# is stuck at 1.6.0 (a different, stale fork), and its gersemi (0.24.0) lags the
-# repo's 0.27.7 and would reflow CMake files.
+# is stuck at 1.6.0 (a different, stale fork), and its gersemi lags upstream and
+# would reflow CMake files.
 [feature.lint.pypi-dependencies]
-gersemi = "==0.27.7"
+gersemi = "==0.29.1"
 
 [feature.lint.tasks]
 lint = "prek run --all-files"
