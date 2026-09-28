@@ -33,12 +33,6 @@ repos:
         entry: clang-format -i
         types_or: [c++, c]
 
-      - id: cpplint
-        name: cpplint
-        language: system
-        entry: cpplint
-        types: [c++]
-
       - id: codespell
         name: codespell
         language: system
