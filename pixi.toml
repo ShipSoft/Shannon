@@ -31,6 +31,19 @@ cmake = ">=3.27"
 ninja = "*"
 cxx-compiler = "*"
 
+# Static analysis. clang-tidy lives here rather than in [feature.lint] because
+# it replays the commands in compile_commands.json and so needs the same
+# headers the compiler saw; feature.lint is a separate solve group and could
+# drift from them. clang-tools provides clang-tidy but does not depend on the
+# clang package that ships clang's own builtin headers (stddef.h and friends),
+# and without those every translation unit fails to parse.
+# Both carry the >=19 floor that .clang-tidy's ExcludeHeaderFilterRegex needs,
+# and they have to resolve to the same major: clang-tidy looks for its builtin
+# headers under lib/clang/<major>/include, which is what the clang package
+# supplies. Both come from the same llvm feedstock, so conda keeps them in step.
+clang = ">=19"
+clang-tools = ">=19"
+
 [activation]
 scripts = ["activate.sh"]
 
@@ -50,6 +63,38 @@ test = { cmd = "ctest --test-dir build --output-on-failure", depends-on = ["buil
 smoke = { cmd = "scripts/smoke.sh", depends-on = ["build"] }
 clean = "rm -rf build"
 
+# Static analysis, mirroring ShipSoft/.github's clang-tidy.yml. `clang-tidy`
+# reports the whole tree; `clang-tidy-diff` reports only what CI gates on,
+# namely findings on lines you changed relative to main. -source-filter is a
+# Python regex (run-clang-tidy is a Python script), unlike the llvm::Regex
+# patterns in .clang-tidy. These use TOML literal strings so the backslashes
+# survive.
+clang-tidy = { cmd = '''
+run-clang-tidy -p build -j $(nproc) -quiet \
+    -source-filter '^(?!.*(/G__|Dict[.]cxx|/_deps/|/CMakeFiles/)).*' \
+    -extra-arg=-isystem$CONDA_PREFIX/include
+''', depends-on = ["build"] }
+# clang-tidy-diff.py ships with clang-tools but is not on PATH. Diffing against
+# origin/main alone, with no second commit, includes staged and unstaged work, so
+# this sees the patch in your tree rather than only what you have committed.
+#
+# It is a quick check, not the same thing CI does: clang-tidy-diff only looks at
+# files in the compilation database, so a changed *header* is not analysed here.
+# CI maps headers to the translation units that include them. For a header-only
+# change, run `pixi run clang-tidy` or let CI report it.
+#
+# The diff goes to a file and the consumer reads it back, rather than the two
+# being piped: pixi does not run tasks under `set -o pipefail`, so a failing
+# `git diff` (no origin/main in a fresh or shallow clone, say) would otherwise be
+# swallowed. clang-tidy-diff.py accepts the empty input and exits 0, reporting
+# "No relevant changes found" about a tree it never looked at.
+clang-tidy-diff = { cmd = '''
+git diff --unified=0 --diff-filter=d origin/main -- '*.cpp' '*.hpp' '*.cxx' '*.h' \
+    > build/clang-tidy-diff.patch \
+  && python $CONDA_PREFIX/share/clang/clang-tidy-diff.py -p1 -path build -j $(nproc) \
+      -quiet -only-check-in-db -extra-arg=-isystem$CONDA_PREFIX/include \
+      < build/clang-tidy-diff.patch
+''', depends-on = ["build"] }
 
 [feature.bench.dependencies]
 hyperfine = "*"
@@ -62,18 +107,17 @@ linux-perf = "*"
 [feature.lint.dependencies]
 prek = "*"
 python = ">=3.11"
-clang-format = "22.*"
+clang-format = "23.*"
 codespell = "*"
 reuse = "*"
 cffconvert = "*"
 commitizen = "*"
 
 # Pinned via PyPI to match the previous hook revs exactly: conda-forge's cpplint
-# is stuck at 1.6.0 (a different, stale fork), and its gersemi (0.24.0) lags the
-# repo's 0.27.7 and would reflow CMake files.
+# is stuck at 1.6.0 (a different, stale fork), and its gersemi lags upstream and
+# would reflow CMake files.
 [feature.lint.pypi-dependencies]
-cpplint = "==2.0.2"
-gersemi = "==0.27.7"
+gersemi = "==0.29.1"
 
 [feature.lint.tasks]
 lint = "prek run --all-files"

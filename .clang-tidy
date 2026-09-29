@@ -1,16 +1,132 @@
-HeaderFilterRegex: '.*'
+# SPDX-FileCopyrightText: CERN for the benefit of the SHiP Collaboration
+# SPDX-License-Identifier: LGPL-3.0-or-later
+#
+# Canonical ShipSoft clang-tidy configuration. Edit it here, in
+# ShipSoft/.github -> sync/.clang-tidy; config-sync distributes it to the C++
+# repositories monthly. Per-repository exceptions do not belong in this file:
+# add a .clang-tidy with `InheritParentConfig: true` to the source directory
+# that needs the delta (see the config-sync section of the README).
+#
+# The goal is idiomatic modern C++ along the C++ Core Guidelines, so whole
+# check families are enabled and every opt-out below is deliberate.
+#
+# Enforcement is a ratchet. ShipSoft/.github's clang-tidy.yml fails a pull
+# request only on findings that land on lines the pull request adds or changes,
+# and reports the existing backlog without failing on pushes. That is what lets
+# this list be strict without stalling work on older code.
+#
+# Requires clang-tidy >= 19 for ExcludeHeaderFilterRegex.
+#
+# Do not put `#` comments inside the Checks block below. It is a YAML folded
+# scalar, so `#` is literal text, not a comment: the lines are joined with
+# spaces and the check name following a comment is swallowed into it and
+# silently stops applying. Rationale for the opt-outs therefore lives here:
+#
+#   ROOT and Geant4 interop
+#     bugprone-multi-level-implicit-pointer-conversion
+#         ROOT's TTree::SetBranchAddress(void*) API pattern.
+#     bugprone-reserved-identifier
+#         ROOT dictionaries and FairRoot base classes use reserved spellings.
+#     clang-analyzer-core.UndefinedBinaryOperatorResult
+#         ROOT headers throw these by the hundred.
+#     cppcoreguidelines-owning-memory
+#         ROOT and Geant4 own their raw pointers; we do not use gsl::owner.
+#     cppcoreguidelines-pro-type-vararg
+#         TObject::Error/Warning/Info and Printf are variadic.
+#
+#   Too noisy to be useful here
+#     misc-include-cleaner        IWYU-grade; unusable against ROOT's headers.
+#     portability-avoid-pragma-once  We use #pragma once deliberately.
+#     readability-trailing-comma  Fights clang-format, which then breaks the
+#                                 initializer one element per line.
+#
+#   Revisit after the first soak rather than re-deciding each time:
+#   misc-const-correctness and readability-braces-around-statements are the
+#   loudest checks that remain, but both are auto-fixable. Add -cert-err58-cpp
+#   if ROOT's ClassImp static registration objects prove noisy, and
+#   -cppcoreguidelines-avoid-non-const-global-variables if gGeoManager-style
+#   globals do.
+#
+#   Check aliases have to be negated by name. An alias is a second check name
+#   bound to the same implementation, so switching the target off leaves the
+#   alias on through its family glob and the finding comes back under the other
+#   name. The pairs that matter here:
+#     cert-dcl16-c                             readability-uppercase-literal-suffix
+#     cert-dcl37-c, cert-dcl51-cpp             bugprone-reserved-identifier
+#     cppcoreguidelines-narrowing-conversions  bugprone-narrowing-conversions
+#     cppcoreguidelines-avoid-c-arrays         modernize-avoid-c-arrays
+#   The last pair runs the other way round, because the cppcoreguidelines name
+#   is the alias, so the modernize name is the one to negate. Either way, an
+#   opt-out means negating both names.
+#
+#   Deliberately absent: readability-identifier-naming CheckOptions. The check
+#   is enabled by readability-* but stays silent while unconfigured.
+#   Repositories ready to enforce a convention opt in with a layer file.
+---
 Checks: >
   -*,
   bugprone-*,
   -bugprone-easily-swappable-parameters,
-  -bugprone-narrowing-conversions,
-  -bugprone-branch-clone,
   -bugprone-exception-escape,
-  cppcoreguidelines-pro-type-cstyle-cast,
-  cppcoreguidelines-virtual-class-destructor,
-  modernize-make-unique,
-  modernize-use-nullptr,
-  modernize-use-override,
-  performance-unnecessary-value-param,
+  -bugprone-multi-level-implicit-pointer-conversion,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  cert-*,
+  -cert-dcl16-c,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp,
+  clang-analyzer-*,
+  -clang-analyzer-core.UndefinedBinaryOperatorResult,
+  concurrency-*,
+  cppcoreguidelines-*,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-narrowing-conversions,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-vararg,
   google-build-using-namespace,
-  readability-simplify-boolean-expr,
+  misc-*,
+  -misc-include-cleaner,
+  -misc-no-recursion,
+  -misc-non-private-member-variables-in-classes,
+  modernize-*,
+  -modernize-avoid-c-arrays,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type,
+  performance-*,
+  portability-*,
+  -portability-avoid-pragma-once,
+  readability-*,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+  -readability-trailing-comma,
+  -readability-uppercase-literal-suffix,
+
+# Empty on purpose. The CI ratchet decides what fails, from the diff.
+WarningsAsErrors: ''
+
+# Route --fix through the repository's own .clang-format.
+FormatStyle: file
+
+# Check our own headers, skip anything vendored or generated. These are matched
+# with llvm::Regex (POSIX ERE), which has no lookahead -- hence the separate
+# exclude pattern rather than a negative lookahead in HeaderFilterRegex.
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: '(/\.pixi/|/\.direnv/|/build/|/_deps/|/CMakeFiles/|LinkDef\.h$|Dict\.h$)'
+
+CheckOptions:
+  cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor: true
+  misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+  modernize-use-override.AllowOverrideAndFinal: false
+  performance-move-const-arg.CheckTriviallyCopyableMove: true
+  readability-function-size.LineThreshold: 100
+  readability-function-size.StatementThreshold: 50
+  readability-function-size.BranchThreshold: 10
