@@ -43,7 +43,6 @@ namespace {
 // Stream selectors separating different draws on the same seed (cf.
 // PhiloxRng's key_hi parameter) so they're uncorrelated.
 constexpr std::uint32_t digitise_stream = 0xD161715E;
-constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 
 using DigitisedHit = std::variant<::SHiP::UBTHit, ::SHiP::SBTHit, ::SHiP::StrawTubesHit,
                                   ::SHiP::CaloHit, ::SHiP::TimeDetHit>;
@@ -104,21 +103,11 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = config.get<std::string>("layer");
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
-    double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
-    double const spill_time_ns = 1.2e9;                      // Total length of a spill in ns
-    double const nominal_pot_per_spill = 4e13;               // PoT per spill
-
-    if (pot_sim > nominal_pot_per_spill)
-        throw std::runtime_error("Provided simulated PoT is greater than a single spill");
-
-    double const high_time =
-        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
-
     m.transform(
          "digitise_hits",
-         [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
-                                                    std::vector<::SHiP::SimHit> const& sim_hits,
-                                                    double const event_time_offset) {
+         [seed, digitiser = Digitiser{}](data_cell_index const& id,
+                                         std::vector<::SHiP::SimHit> const& sim_hits,
+                                         double const event_time_offset) {
              Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
              return digitiser(sim_hits, event_time_offset, rng);
          },

@@ -76,6 +76,9 @@ class PhiloxRng {
 
     // An approximation of a gamma function
     double gamma_wh(double alpha, double scale = 1) {
+        if (alpha <= 0.0)
+            throw std::invalid_argument(
+                "Provided alpha for gamma function approximation must be greater than 0.");
         const double a = 1.0 - 1.0 / (9.0 * alpha);
         const double b = 1.0 / (3.0 * std::sqrt(alpha));
 

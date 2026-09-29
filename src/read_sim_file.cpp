@@ -27,13 +27,32 @@ using namespace phlex;
 using namespace phlex::experimental::literals;
 constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 
+// This is a class to generate numbers in an approximately ascending time order.
+// The key point is that the nth order statistic of a uniform distribution is
+// distributed according to a beta distribution.
+// Because you are drawing from a distribution the results are not strictly ordered - but you
+// can execute this in any order. The exact solution from Bentley and Saxe would have to be executed
+// serially and there is no guarantee phlex will pass each row in sequence.
 namespace {
 class ascendingTimeGenerator {
    public:
     ascendingTimeGenerator(double nToGen, double maxTime, std::uint32_t seed, std::uint32_t stream)
-        : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {};
+        : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {
+        if (m_n <= 0)
+            throw std::invalid_argument("The number of events to run over must be positive.");
+        if (m_maxTime <= 0.0)
+            throw std::invalid_argument(
+                "The maximum time of the spill fraction must be positive. Check your options.");
+    };
     [[nodiscard]]
     double next(const int evtNumber) {
+        if (evtNumber < 0)
+            throw std::invalid_argument(
+                "Trying to generate a time for an event with negative evtNumber.");
+        if (evtNumber > m_n)
+            throw std::invalid_argument(
+                "Trying to generate a time for an event beyond the number generated. Check your "
+                "PoT.");
         const int k = evtNumber + 1;
         Shannon::PhiloxRng rng{m_seed, m_stream, static_cast<std::uint32_t>(k)};
         return rng.beta_dist(k, m_n - k + 1) * m_maxTime;
