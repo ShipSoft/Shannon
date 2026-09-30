@@ -74,7 +74,9 @@ class PhiloxRng {
                sigma * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * std::numbers::pi * u2);
     }
 
-    // An approximation of a gamma function
+    /// Draw an approximate gamma-distributed value with shape alpha and scale,
+    /// advancing this generator. For a gamma distribution, both must be positive;
+    /// scale is not validated. Throws std::invalid_argument if alpha <= 0.
     double gamma_wh(double alpha, double scale = 1) {
         if (alpha <= 0.0)
             throw std::invalid_argument(
@@ -91,7 +93,9 @@ class PhiloxRng {
         return scale * alpha * x * x * x;
     }
 
-    // An approximation of a beta distribution
+    /// Draw an approximate beta-distributed value with positive shapes alpha and
+    /// zeta, advancing this generator. Propagates std::invalid_argument from
+    /// gamma_wh if either shape is <= 0; an invalid zeta still consumes the alpha draw.
     double beta_dist(double alpha, double zeta) {
         const double X = gamma_wh(alpha);
         const double Y = gamma_wh(zeta);

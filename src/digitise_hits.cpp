@@ -105,6 +105,10 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
 
     m.transform(
          "digitise_hits",
+         /// Return hit collections in UBT, SBT, straw tube, calorimeter, and timing
+         /// detector order, adding event_time_offset (nanoseconds) to each hit time.
+         /// Smearing is reproducible for a given seed and event index. Propagates
+         /// std::runtime_error when a hit has an unsupported detector ID.
          [seed, digitiser = Digitiser{}](data_cell_index const& id,
                                          std::vector<::SHiP::SimHit> const& sim_hits,
                                          double const event_time_offset) {

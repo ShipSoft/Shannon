@@ -36,6 +36,10 @@ constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 namespace {
 class ascendingTimeGenerator {
    public:
+    /// Configure reproducible event times using seed and stream, with maxTime in
+    /// nanoseconds. nToGen is truncated to an integer event count; it must be finite
+    /// and representable as an int. Throws std::invalid_argument if the truncated
+    /// count or maxTime is <= 0.
     ascendingTimeGenerator(double nToGen, double maxTime, std::uint32_t seed, std::uint32_t stream)
         : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {
         if (m_n <= 0)
@@ -44,6 +48,13 @@ class ascendingTimeGenerator {
             throw std::invalid_argument(
                 "The maximum time of the spill fraction must be positive. Check your options.");
     };
+    /// Return a time in nanoseconds for the zero-based evtNumber, sampling an
+    /// approximation to its uniform order statistic over the configured duration.
+    /// Repeated calls for the same event return the same value regardless of call
+    /// order; times for successive events are not guaranteed to increase.
+    /// Throws std::invalid_argument for negative indices or indices above the
+    /// event count. An index equal to the count propagates std::invalid_argument
+    /// from beta_dist because its second shape is zero.
     [[nodiscard]]
     double next(const int evtNumber) {
         if (evtNumber < 0)
@@ -126,9 +137,10 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
 
-    // Provide a random time. Has to be done in serial to keep increasing time order
     m.provide(
          "provide_time",
+         /// Return the event's reproducible time in nanoseconds, independently of
+         /// call order. Propagates std::invalid_argument for an invalid event index.
          [timeGenerator](data_cell_index const& id) -> double {
              return timeGenerator->next(id.number());
          },
