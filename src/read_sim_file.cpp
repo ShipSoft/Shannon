@@ -17,6 +17,8 @@
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
+#include <cmath>
+#include <cstdint>
 #include <memory>
 #include <philox_rng.hpp>
 #include <stdexcept>
@@ -34,33 +36,44 @@ constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 // can execute this in any order. The exact solution from Bentley and Saxe would have to be executed
 // serially and there is no guarantee phlex will pass each row in sequence.
 namespace {
+// Validate the requested event count while it is still a double: converting an
+// out-of-range double to an integer is undefined behaviour. 2^53 is the largest
+// range over which a double holds every integer exactly.
+std::uint64_t checked_event_count(double nToGen) {
+    constexpr double max_count = 9007199254740992.0;  // 2^53
+    if (!std::isfinite(nToGen) || nToGen < 1.0)
+        throw std::invalid_argument("The number of events to run over must be positive.");
+    if (nToGen > max_count)
+        throw std::invalid_argument("The number of events to run over must not exceed 2^53.");
+    return static_cast<std::uint64_t>(std::llround(nToGen));
+}
+
 class ascendingTimeGenerator {
    public:
     ascendingTimeGenerator(double nToGen, double maxTime, std::uint32_t seed, std::uint32_t stream)
-        : m_maxTime(maxTime), m_n(static_cast<int>(nToGen)), m_seed(seed), m_stream(stream) {
-        if (m_n <= 0)
-            throw std::invalid_argument("The number of events to run over must be positive.");
+        : m_maxTime(maxTime), m_n(checked_event_count(nToGen)), m_seed(seed), m_stream(stream) {
         if (m_maxTime <= 0.0)
             throw std::invalid_argument(
                 "The maximum time of the spill fraction must be positive. Check your options.");
     };
     [[nodiscard]]
-    double next(const int evtNumber) {
-        if (evtNumber < 0)
-            throw std::invalid_argument(
-                "Trying to generate a time for an event with negative evtNumber.");
-        if (evtNumber > m_n)
+    double next(const std::uint64_t evtNumber) {
+        // k = evtNumber + 1 must satisfy k <= m_n, otherwise Beta(k, m_n - k + 1)
+        // has a non-positive shape parameter.
+        if (evtNumber >= m_n)
             throw std::invalid_argument(
                 "Trying to generate a time for an event beyond the number generated. Check your "
                 "PoT.");
-        const int k = evtNumber + 1;
-        Shannon::PhiloxRng rng{m_seed, m_stream, static_cast<std::uint32_t>(k)};
-        return rng.beta_dist(k, m_n - k + 1) * m_maxTime;
+        const std::uint64_t k = evtNumber + 1;
+        Shannon::PhiloxRng rng{m_seed, m_stream, k};
+        return rng.beta_dist(static_cast<double>(k), static_cast<double>(m_n - k + 1),
+                             Shannon::Precision::Bits53) *
+               m_maxTime;
     }
 
    private:
     double m_maxTime = 0.;
-    int m_n = 0;
+    std::uint64_t m_n = 0;
     std::uint32_t m_seed = 0;
     std::uint32_t m_stream = 0;
 };
