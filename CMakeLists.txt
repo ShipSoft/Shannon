@@ -40,7 +40,9 @@ target_link_libraries(
 )
 target_include_directories(
     read_sim_file
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src" "${Random123_INCLUDE_DIR}"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    SYSTEM
+    "${Random123_INCLUDE_DIR}"
 )
 
 # Digitisation plugin

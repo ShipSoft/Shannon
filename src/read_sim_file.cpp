@@ -139,7 +139,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
 
-    // Provide a random time. Has to be done in serial to keep increasing time order
+    // Provide a random time.
     m.provide(
          "provide_time",
          [timeGenerator](data_cell_index const& id) -> double {

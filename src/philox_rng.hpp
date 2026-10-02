@@ -87,7 +87,8 @@ class PhiloxRng {
                sigma * std::sqrt(-2.0 * std::log(u1)) * std::cos(2.0 * std::numbers::pi * u2);
     }
 
-    // An approximation of a gamma function
+    // An approximation of a gamma function - Wilson-Hilferty (1931)
+    // This rapidly approaches a Gaussian by alpha ~ 10
     double gamma_wh(double alpha, double scale = 1, Precision precision = Precision::Bits32) {
         if (alpha <= 0.0)
             throw std::invalid_argument(
@@ -104,7 +105,7 @@ class PhiloxRng {
         return scale * alpha * x * x * x;
     }
 
-    // An approximation of a beta distribution
+    // A beta distribution
     double beta_dist(double alpha, double zeta, Precision precision = Precision::Bits32) {
         const double X = gamma_wh(alpha, 1, precision);
         const double Y = gamma_wh(zeta, 1, precision);
