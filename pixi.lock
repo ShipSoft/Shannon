@@ -400,6 +400,7 @@ environments:
       - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
       - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
       - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
   default:
     channels:
     - url: https://prefix.dev/ship/
@@ -779,6 +780,7 @@ environments:
       - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
       - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
       - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
   lint:
     channels:
     - url: https://prefix.dev/ship/
@@ -1164,6 +1166,7 @@ environments:
       - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
       - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
       - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
       - pypi: https://files.pythonhosted.org/packages/87/ef/dcfaf0d78cf3684575fcdacd9213ce1d9d1bf98b9c194f891d0fe94dcda6/gersemi-0.29.1-cp314-cp314-manylinux_2_28_x86_64.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.46.1-default_h4852527_102.conda
@@ -7906,6 +7909,17 @@ packages:
   run_exports: {}
   size: 44148
   timestamp: 1781443807524
+- conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
+  sha256: a276e44259ca9de018da31229e773a97099e02d2688ce8752f10530b4a54b1c6
+  md5: 900d6717c365e803ceaf2669833242fc
+  depends:
+  - random123
+  license: LGPL-3.0-or-later
+  run_exports:
+    weak:
+    - ship-random >=0.2.0,<0.3.0a0
+  size: 15592
+  timestamp: 1791207688242
 - pypi: https://files.pythonhosted.org/packages/87/ef/dcfaf0d78cf3684575fcdacd9213ce1d9d1bf98b9c194f891d0fe94dcda6/gersemi-0.29.1-cp314-cp314-manylinux_2_28_x86_64.whl
   name: gersemi
   version: 0.29.1
