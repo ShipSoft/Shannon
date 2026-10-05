@@ -11,7 +11,7 @@ platforms = ["linux-64"]
 # SHiP/HEP packages (prefix.dev/ship + conda-forge)
 shipdatamodel = ">=0.3"
 shipgeometryservice = "*"
-phlex = ">=0.3.0"
+phlex = ">=0.4.1"
 root = ">=6.36"
 geant4 = ">=11.3"
 pythia8 = ">=8.3"

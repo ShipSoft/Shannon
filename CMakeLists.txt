@@ -15,14 +15,11 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
 find_package(SHiPDataModel REQUIRED)
 find_path(Random123_INCLUDE_DIR Random123/philox.h REQUIRED)
 
-# Phlex's cmake config does not call find_dependency for its transitive deps
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost
 endif()
-find_package(Boost REQUIRED COMPONENTS json)
-find_package(TBB REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(phlex REQUIRED)
+find_package(phlex 0.4.1 REQUIRED)
 find_package(
     ROOT
     REQUIRED
