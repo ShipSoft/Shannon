@@ -393,8 +393,10 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto mode = config.get<std::string>("mode", std::string{"digi"});
     auto rntuple_file = config.get<std::string>("rntuple_file", std::string{"digitised_hits.root"});
     auto histo_file = config.get<std::string>("histo_file", std::string{"digi_validation.root"});
-    auto creator = config.get<std::string>("creator", std::string{"digitise_hits"});
-    auto layer = config.get<std::string>("layer", std::string{"spill"});
+    auto const creator = phlex::experimental::identifier{
+        config.get<std::string>("creator", std::string{"digitise_hits"})};
+    auto const layer =
+        phlex::experimental::identifier{config.get<std::string>("layer", std::string{"spill"})};
 
     if (mode != "digi" && mode != "noop")
         throw std::runtime_error("Unknown digitised_output_module mode: '" + mode +
@@ -409,17 +411,14 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
             "differ (both resolve to '" +
             rntuple_file + "')");
 
-    // Shorthand for the selectors below: the configured creator and layer
-    // with the given suffix.
     auto selector = [&creator, &layer](char const* suffix) {
-        return product_selector{.creator = phlex::experimental::identifier{creator},
-                                .layer = phlex::experimental::identifier{layer},
-                                .suffix = phlex::experimental::identifier{suffix}};
+        return product_selector{
+            .creator = creator, .layer = layer, .suffix = phlex::experimental::identifier{suffix}};
     };
 
     auto passthrough = [&layer](char const* suffix) {
         return product_selector{.creator = "rntuple_source",
-                                .layer = phlex::experimental::identifier{layer},
+                                .layer = layer,
                                 .suffix = phlex::experimental::identifier{suffix}};
     };
 
