@@ -13,7 +13,7 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
 
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
-find_path(Random123_INCLUDE_DIR Random123/philox.h REQUIRED)
+find_package(SHiPRandom 0.2 REQUIRED)
 
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost
@@ -43,12 +43,10 @@ target_include_directories(
     PUBLIC "${PROJECT_BINARY_DIR}"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
-target_include_directories(
+target_link_libraries(
     digitise_hits
-    SYSTEM
-    PRIVATE "${Random123_INCLUDE_DIR}"
+    PRIVATE phlex::module SHiP::SHiPDataModel SHiP::Random
 )
-target_link_libraries(digitise_hits PRIVATE phlex::module SHiP::SHiPDataModel)
 
 # Digitised output module plugin
 add_library(digitised_output_module MODULE src/digitised_output_module.cpp)
@@ -70,14 +68,9 @@ target_include_directories(
     make_test_input
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
-target_include_directories(
-    make_test_input
-    SYSTEM
-    PRIVATE "${Random123_INCLUDE_DIR}"
-)
 target_link_libraries(
     make_test_input
-    PRIVATE SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
+    PRIVATE SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
 )
 
 # Install
