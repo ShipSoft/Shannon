@@ -101,7 +101,7 @@ class Digitiser {
 
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     printVersion();
-    auto const layer = config.get<std::string>("layer");
+    auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
     double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
