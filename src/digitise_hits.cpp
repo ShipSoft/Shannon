@@ -23,13 +23,13 @@
 #include <SHiP/detectors/TimeDetHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
 #include <SHiP/detectors/detector_id.hpp>
+#include <SHiP/random/philox_rng.hpp>
 #include <cstdint>
 #include <detectors/calorimeter.hpp>
 #include <detectors/straw_tubes.hpp>
 #include <detectors/surround_tagger.hpp>
 #include <detectors/timing_detector.hpp>
 #include <detectors/upstream_tagger.hpp>
-#include <philox_rng.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -56,7 +56,7 @@ class Digitiser {
    public:
     [[nodiscard]]
     DigitisedHits operator()(std::vector<::SHiP::SimHit> const& sim_hits, double event_time_offset,
-                             Shannon::PhiloxRng& rng) const {
+                             SHiP::random::PhiloxRng& rng) const {
         DigitisedHits result;
         for (auto const& sim_hit : sim_hits) {
             std::visit(
@@ -72,7 +72,7 @@ class Digitiser {
 
     [[nodiscard]]
     DigitisedHit digitise(::SHiP::SimHit const& hit, double event_time_offset,
-                          Shannon::PhiloxRng& rng) const {
+                          SHiP::random::PhiloxRng& rng) const {
         switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
             case SHiP::detector_id::UpstreamTagger:
                 return upstream_tagger_.digitise(hit, event_time_offset, rng);
@@ -118,10 +118,11 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
          "digitise_hits",
          [seed, high_time, digitiser = Digitiser{}](data_cell_index const& id,
                                                     std::vector<::SHiP::SimHit> const& sim_hits) {
-             Shannon::PhiloxRng time_rng{seed, time_offset_stream,
-                                         static_cast<std::uint32_t>(id.number())};
+             SHiP::random::PhiloxRng time_rng{seed, time_offset_stream,
+                                              static_cast<std::uint32_t>(id.number())};
              double event_time_offset = time_rng.uniform53(0.0, high_time);
-             Shannon::PhiloxRng rng{seed, digitise_stream, static_cast<std::uint32_t>(id.number())};
+             SHiP::random::PhiloxRng rng{seed, digitise_stream,
+                                         static_cast<std::uint32_t>(id.number())};
              return digitiser(sim_hits, event_time_offset, rng);
          },
          concurrency::unlimited)

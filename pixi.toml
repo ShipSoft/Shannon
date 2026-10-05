@@ -16,6 +16,8 @@ root = ">=6.36"
 geant4 = ">=11.3"
 pythia8 = ">=8.3"
 random123 = "*"
+# SHiP::random::PhiloxRng, the per-spill digitisation RNG.
+ship-random = ">=0.2"
 libjsonnet = "*"
 
 # C++ libraries
