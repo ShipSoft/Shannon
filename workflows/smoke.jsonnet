@@ -1,4 +1,5 @@
 {
+  stage: 'digitisation',
   driver: {
     cpp: 'generate_layers',
     layers: {
