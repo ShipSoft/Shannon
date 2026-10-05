@@ -409,8 +409,8 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
             "differ (both resolve to '" +
             rntuple_file + "')");
 
-    // product_selector's members move from whatever they are given (even
-    // lvalues), so hand each selector its own identifier copies.
+    // Shorthand for the selectors below: the configured creator and layer
+    // with the given suffix.
     auto selector = [&creator, &layer](char const* suffix) {
         return product_selector{.creator = phlex::experimental::identifier{creator},
                                 .layer = phlex::experimental::identifier{layer},
