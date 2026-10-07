@@ -17,10 +17,10 @@
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
+#include <SHiP/random/philox_rng.hpp>
 #include <cmath>
 #include <cstdint>
 #include <memory>
-#include <philox_rng.hpp>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -65,9 +65,9 @@ class ascendingTimeGenerator {
                 "Trying to generate a time for an event beyond the number generated. Check your "
                 "PoT.");
         const std::uint64_t k = evtNumber + 1;
-        Shannon::PhiloxRng rng{m_seed, m_stream, k};
-        return rng.beta_dist(static_cast<double>(k), static_cast<double>(m_n - k + 1),
-                             Shannon::Precision::Bits53) *
+        SHiP::random::PhiloxRng rng{m_seed, m_stream, k};
+        return rng.beta_dist_approx(static_cast<double>(k), static_cast<double>(m_n - k + 1),
+                                    SHiP::random::Precision::Bits53) *
                m_maxTime;
     }
 
