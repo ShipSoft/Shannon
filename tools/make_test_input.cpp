@@ -14,10 +14,10 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
 #include <SHiP/detectors/detector_id.hpp>
+#include <SHiP/random/philox_rng.hpp>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
-#include <philox_rng.hpp>
 #include <string>
 #include <vector>
 
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
         SHiP::detector_id::TimingDetector};
 
     for (std::uint32_t event = 0; event < n_events; ++event) {
-        Shannon::PhiloxRng rng{0, 0x7E57DA7A, event};
+        SHiP::random::PhiloxRng rng{0, 0x7E57DA7A, event};
 
         particles->clear();
         hits->clear();

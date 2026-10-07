@@ -10,10 +10,9 @@
 
 #pragma once
 
-#include "philox_rng.hpp"
-
 #include <SHiP/RecHit.hpp>
 #include <SHiP/SimHit.hpp>
+#include <SHiP/random/philox_rng.hpp>
 
 namespace Shannon {
 
@@ -22,7 +21,7 @@ class GaussianSmearer {
     explicit GaussianSmearer(double sigma_x = 0.1, double sigma_y = 0.1)
         : sigma_x_{sigma_x}, sigma_y_{sigma_y} {}
 
-    ::SHiP::RecHit smear(::SHiP::SimHit const& sim_hit, PhiloxRng& rng) const {
+    ::SHiP::RecHit smear(::SHiP::SimHit const& sim_hit, SHiP::random::PhiloxRng& rng) const {
         auto reconstructed = SHiP::fromSimHit(sim_hit);
         reconstructed.position = {sim_hit.position[0] + rng.gaussian(0.0, sigma_x_),
                                   sim_hit.position[1] + rng.gaussian(0.0, sigma_y_),
