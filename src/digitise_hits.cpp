@@ -72,7 +72,7 @@ class Digitiser {
     [[nodiscard]]
     DigitisedHit digitise(::SHiP::SimHit const& hit, double event_time_offset,
                           SHiP::random::PhiloxRng& rng) const {
-        switch (static_cast<SHiP::detector_id>(hit.detectorId)) {
+        switch (static_cast<SHiP::detector_id>(hit.detector_id)) {
             case SHiP::detector_id::UpstreamTagger:
                 return upstream_tagger_.digitise(hit, event_time_offset, rng);
             case SHiP::detector_id::SurroundTagger:
@@ -85,7 +85,7 @@ class Digitiser {
                 return timing_detector_.digitise(hit, event_time_offset, rng);
         }
         throw std::runtime_error{"No digitiser registered for detector ID " +
-                                 std::to_string(hit.detectorId)};
+                                 std::to_string(hit.detector_id)};
     }
 
    private:

@@ -281,9 +281,9 @@ class DigiHistogrammer {
                     ctxs.sim_particle_vtx_y->Fill(hit.vertex[1]);
                     ctxs.sim_particle_vtx_z->Fill(hit.vertex[2]);
                 } else {
-                    ctxs.hit_x->Fill(hit.recHit.position[0]);
-                    ctxs.hit_y->Fill(hit.recHit.position[1]);
-                    ctxs.hit_z->Fill(hit.recHit.position[2]);
+                    ctxs.hit_x->Fill(hit.rec_hit.position[0]);
+                    ctxs.hit_y->Fill(hit.rec_hit.position[1]);
+                    ctxs.hit_z->Fill(hit.rec_hit.position[2]);
                 }
             }
         };

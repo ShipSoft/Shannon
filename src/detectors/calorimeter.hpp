@@ -21,7 +21,7 @@ class Calorimeter {
                              SHiP::random::PhiloxRng& rng) const {
         ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
         returnHit.time += time_offset;
-        return {.recHit = returnHit};
+        return {.rec_hit = returnHit};
     }
 
    private:
