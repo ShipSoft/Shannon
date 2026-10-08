@@ -6,16 +6,17 @@
 //
 // Provides simulated particles and hits read from an RNTuple file.
 
-#include "sorted_random.hpp"
 #include "phlex/configuration.hpp"
 #include "phlex/core/product_selector.hpp"
 #include "phlex/model/data_cell_index.hpp"
 #include "phlex/module.hpp"
 #include "phlex/source.hpp"
+#include "sorted_random.hpp"
 
 #include <ROOT/RNTupleReader.hxx>
 #include <ROOT/RNTupleView.hxx>
 
+#include <SHiP/EventHeader.hpp>
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
 #include <SHiP/random/philox_rng.hpp>
@@ -80,9 +81,6 @@ class ascendingTimeGenerator {
 };
 }  // namespace
 
-
-
-
 PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const input_file = config.get<std::string>("input_file");
     auto const ntuple_name = config.get<std::string>("ntuple_name");
@@ -91,8 +89,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const hits_field = config.get<std::string>("hits_field", std::string{"sim_hits"});
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
     double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
-    double const nEntries{
-        config.get<double>("entries", 10000)};  // How many indices you are running over
+
     // Each provider owns its own reader: providers are separate graph nodes
     // that can run concurrently, and RNTupleReader is not thread-safe.
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
@@ -105,6 +102,11 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto hit_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimHit>>>(
         hit_reader->GetView<std::vector<SHiP::SimHit>>(hits_field));
 
+    std::shared_ptr<ROOT::RNTupleReader> evt_header_reader =
+        ROOT::RNTupleReader::Open(ntuple_name, input_file);
+    auto evt_header_view = std::make_shared<ROOT::RNTupleView<SHiP::EventHeader>>(
+        evt_header_reader->GetView<SHiP::EventHeader>("event_header"));
+
     double const spill_time_ns = 1.2e9;         // Total length of a spill in ns
     double const nominal_pot_per_spill = 4e13;  // PoT per spill
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
@@ -115,10 +117,10 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
 
     auto timeGenerator =
-        std::make_shared<ascendingTimeGenerator>(nEntries, high_time, seed, time_offset_stream);
+        std::make_shared<ascendingTimeGenerator>(pot_sim, high_time, seed, time_offset_stream);
 
-    std::cout<<"high time: "<<high_time<<" - pot: "<<pot_sim<<std::endl;
-    sorted_random myrand(seed, time_offset_stream, 1, 1000);
+    auto splitTimeGenerator =
+        std::make_shared<sorted_random>(seed, time_offset_stream, high_time, pot_sim);
 
     m.provide(
          "read_rntuple",
@@ -149,9 +151,14 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // Provide a random time.
     m.provide(
          "provide_time",
-         [timeGenerator, myrand](data_cell_index const& id) -> double {
-            std::cout<<"id: "<<id.number()<<" - random time: "<<myrand.next(id.number())<<std::endl;
-            return timeGenerator->next(id.number());
+         [timeGenerator, splitTimeGenerator, reader = std::move(evt_header_reader),
+          view = std::move(evt_header_view)](data_cell_index const& id) -> double {
+             auto entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
+             auto const aegir_id = (*view)(entry_index).aegir_event_id;
+             //            return splitTimeGenerator.next(aegir_id) ; // This is the exact ordered
+             //            version
+
+             return timeGenerator->next(aegir_id);  // This is the approximate one
          },
          concurrency::serial)
         .output_product("rntuple_source", "time", layer);
