@@ -33,7 +33,16 @@ configure_file(ShannonConfig.h.in ShannonConfig.h)
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
 target_link_libraries(
     read_sim_file
-    PRIVATE phlex::module SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
+    PRIVATE
+        phlex::module
+        SHiP::SHiPDataModel
+        SHiP::Random
+        ROOT::RIO
+        ROOT::ROOTNTuple
+)
+target_include_directories(
+    read_sim_file
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 # Digitisation plugin
