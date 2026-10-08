@@ -1,4 +1,4 @@
-local entries = 78;
+local entries = 5;
 {
   stage: 'digitisation',
   driver: {
@@ -11,7 +11,7 @@ local entries = 78;
   sources: {
     rntuple_source: {
       cpp: 'read_sim_file',
-      input_file:  '../aegir/fixed_target_output.root',
+      input_file:  '../aegir/fixed_target_mt_output.root',
       ntuple_name: 'events',
       layer:       'spill',
       entries: entries,

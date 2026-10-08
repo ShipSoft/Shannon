@@ -6,6 +6,7 @@
 //
 // Provides simulated particles and hits read from an RNTuple file.
 
+#include "sorted_random.hpp"
 #include "phlex/configuration.hpp"
 #include "phlex/core/product_selector.hpp"
 #include "phlex/model/data_cell_index.hpp"
@@ -79,6 +80,9 @@ class ascendingTimeGenerator {
 };
 }  // namespace
 
+
+
+
 PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const input_file = config.get<std::string>("input_file");
     auto const ntuple_name = config.get<std::string>("ntuple_name");
@@ -113,6 +117,9 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto timeGenerator =
         std::make_shared<ascendingTimeGenerator>(nEntries, high_time, seed, time_offset_stream);
 
+    std::cout<<"high time: "<<high_time<<" - pot: "<<pot_sim<<std::endl;
+    sorted_random myrand(seed, time_offset_stream, 1, 1000);
+
     m.provide(
          "read_rntuple",
          [reader = std::move(particle_reader), view = std::move(particle_view)](
@@ -142,9 +149,10 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // Provide a random time.
     m.provide(
          "provide_time",
-         [timeGenerator](data_cell_index const& id) -> double {
-             return timeGenerator->next(id.number());
+         [timeGenerator, myrand](data_cell_index const& id) -> double {
+            std::cout<<"id: "<<id.number()<<" - random time: "<<myrand.next(id.number())<<std::endl;
+            return timeGenerator->next(id.number());
          },
-         concurrency::unlimited)
+         concurrency::serial)
         .output_product("rntuple_source", "time", layer);
 }
