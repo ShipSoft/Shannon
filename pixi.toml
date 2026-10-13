@@ -9,9 +9,7 @@ platforms = ["linux-64"]
 
 [dependencies]
 # SHiP/HEP packages (prefix.dev/ship + conda-forge)
-# 0.6 renames the data-model fields to snake_case; Shannon still uses the
-# camelCase names until it is ported.
-shipdatamodel = ">=0.3,<0.6"
+shipdatamodel = ">=0.6.0"
 shipgeometryservice = "*"
 phlex = ">=0.4.1"
 root = ">=6.36"

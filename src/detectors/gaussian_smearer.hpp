@@ -14,7 +14,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/random/philox_rng.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class GaussianSmearer {
    public:
@@ -22,7 +22,7 @@ class GaussianSmearer {
         : sigma_x_{sigma_x}, sigma_y_{sigma_y} {}
 
     ::SHiP::RecHit smear(::SHiP::SimHit const& sim_hit, SHiP::random::PhiloxRng& rng) const {
-        auto reconstructed = SHiP::fromSimHit(sim_hit);
+        auto reconstructed = SHiP::from_sim_hit(sim_hit);
         reconstructed.position = {sim_hit.position[0] + rng.gaussian(0.0, sigma_x_),
                                   sim_hit.position[1] + rng.gaussian(0.0, sigma_y_),
                                   sim_hit.position[2]};
@@ -35,4 +35,4 @@ class GaussianSmearer {
     double sigma_y_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon
