@@ -33,7 +33,7 @@ configure_file(ShannonConfig.h.in ShannonConfig.h)
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
 target_link_libraries(
     read_sim_file
-    PRIVATE phlex::module SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple
+    PRIVATE phlex::module SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple
 )
 
 # Digitisation plugin
@@ -45,7 +45,7 @@ target_include_directories(
 )
 target_link_libraries(
     digitise_hits
-    PRIVATE phlex::module SHiP::SHiPDataModel SHiP::Random
+    PRIVATE phlex::module SHiP::DataModel SHiP::Random
 )
 
 # Digitised output module plugin
@@ -54,7 +54,7 @@ target_link_libraries(
     digitised_output_module
     PRIVATE
         phlex::module
-        SHiP::SHiPDataModel
+        SHiP::DataModel
         ROOT::Hist
         ROOT::RIO
         ROOT::ROOTHistUtil
@@ -70,7 +70,7 @@ target_include_directories(
 )
 target_link_libraries(
     make_test_input
-    PRIVATE SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
+    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
 )
 
 # Install

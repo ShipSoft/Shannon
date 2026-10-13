@@ -49,9 +49,9 @@ int main(int argc, char* argv[]) {
         auto const n_tracks = 1 + static_cast<int>(rng.uniform(0.0, 3.0));
         for (int track = 0; track < n_tracks; ++track) {
             SHiP::SimParticle particle;
-            particle.trackId = track;
-            particle.parentId = -1;
-            particle.pdgCode = 13;
+            particle.track_id = track;
+            particle.parent_id = -1;
+            particle.pdg_code = 13;
             particle.momentum = {rng.uniform(-0.5, 0.5), rng.uniform(-0.5, 0.5),
                                  rng.uniform(10.0, 100.0)};
             particle.energy = particle.momentum[2];
@@ -59,15 +59,15 @@ int main(int argc, char* argv[]) {
 
             for (auto const detector : detectors) {
                 SHiP::SimHit hit;
-                hit.detectorId = static_cast<std::int32_t>(detector);
-                hit.trackId = track;
-                hit.pdgCode = particle.pdgCode;
+                hit.detector_id = static_cast<std::int32_t>(detector);
+                hit.track_id = track;
+                hit.pdg_code = particle.pdg_code;
                 hit.position = {rng.uniform(-500.0, 500.0), rng.uniform(-500.0, 500.0),
                                 rng.uniform(0.0, 10000.0)};
                 hit.momentum = particle.momentum;
-                hit.energyDeposit = rng.uniform(0.0, 0.1);
+                hit.energy_deposit = rng.uniform(0.0, 0.1);
                 hit.time = rng.uniform(0.0, 100.0);
-                hit.pathLength = rng.uniform(0.0, 10.0);
+                hit.path_length = rng.uniform(0.0, 10.0);
                 hits->push_back(hit);
             }
         }

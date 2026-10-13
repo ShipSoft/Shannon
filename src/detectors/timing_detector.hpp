@@ -12,7 +12,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/TimeDetHit.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class TimingDetector {
    public:
@@ -22,11 +22,11 @@ class TimingDetector {
         ::SHiP::RecHit returnHit = smearer_.smear(sim_hit, rng);
         returnHit.time += time_offset;
 
-        return {.recHit = returnHit};
+        return {.rec_hit = returnHit};
     }
 
    private:
     GaussianSmearer smearer_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon

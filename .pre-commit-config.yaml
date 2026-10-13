@@ -9,6 +9,14 @@
 #   pixi run install-hooks   # one-off: install the git hooks
 #   pixi run lint            # run all hooks on all files
 repos:
+  # Shared ShipSoft hooks. forbid-ship-namespace refuses namespace spellings
+  # clang-tidy cannot express: `ship` is lower_case and so passes NamespaceCase,
+  # but it is the pre-2026 spelling the collaboration migrated off.
+  - repo: https://github.com/ShipSoft/.github
+    rev: v1.0.0
+    hooks:
+      - id: forbid-ship-namespace
+
   # prek runs these as native Rust builtins (no environment, fully portable).
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
