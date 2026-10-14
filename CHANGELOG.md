@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-10-14
+
+### Features
+
+- Save a copy of sim hits
+- Add version
+- Copy sim particles
+- Add random time-offset to hits
+- [**breaking**] Require phlex 0.4.1
+
+### Bug fixes
+
+- Let a failed git diff fail the clang-tidy-diff task
+
+### Refactor
+
+- Reuse selector identifiers now that phlex no longer moves from them
+- Take PhiloxRng from ship-random
+
+### Documentation
+
+- Adopt AI policy
+- Describe what the clang-tidy gate actually does, and fix the local check
+- *(output)* Drop the selector lvalue-move note
+
+### Miscellaneous
+
+- Update pixi lock file
+- Remove redundant PR checklist template
+- Grant config-sync job explicit permissions
+- Update pixi lock file
+- Sync shared configs
+- Gate merges on uniform aggregator checks
+- Check C++ against the Core Guidelines with clang-tidy
+- *(lint)* Move clang-format to 23 and gersemi to 0.29.1
+- Update pixi lock file
+
+### Build
+
+- Consume shipdatamodel 0.3.0 and drop the data-model overlay
+- Keep shipdatamodel below 0.6
 ## [0.2.0] - 2026-07-22
 
 ### Features
