@@ -89,11 +89,11 @@ class Digitiser {
     }
 
    private:
-    Shannon::UpstreamTagger upstream_tagger_;
-    Shannon::SurroundTagger surround_tagger_;
-    Shannon::StrawTubes straw_tubes_;
-    Shannon::Calorimeter calorimeter_;
-    Shannon::TimingDetector timing_detector_;
+    SHiP::shannon::UpstreamTagger upstream_tagger_;
+    SHiP::shannon::SurroundTagger surround_tagger_;
+    SHiP::shannon::StrawTubes straw_tubes_;
+    SHiP::shannon::Calorimeter calorimeter_;
+    SHiP::shannon::TimingDetector timing_detector_;
 };
 
 }  // namespace

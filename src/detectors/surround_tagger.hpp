@@ -12,7 +12,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/SBTHit.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class SurroundTagger {
    public:
@@ -29,4 +29,4 @@ class SurroundTagger {
     GaussianSmearer smearer_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon

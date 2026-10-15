@@ -12,7 +12,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/StrawTubesHit.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class StrawTubes {
    public:
@@ -29,4 +29,4 @@ class StrawTubes {
     GaussianSmearer smearer_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon

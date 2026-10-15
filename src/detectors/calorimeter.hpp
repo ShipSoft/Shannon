@@ -12,7 +12,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/CaloHit.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class Calorimeter {
    public:
@@ -28,4 +28,4 @@ class Calorimeter {
     GaussianSmearer smearer_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon

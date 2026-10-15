@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(shannon VERSION 0.2.0 LANGUAGES CXX)
+project(shannon VERSION 0.3.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,15 +34,12 @@ add_library(read_sim_file MODULE src/read_sim_file.cpp)
 target_link_libraries(
     read_sim_file
     PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
         phlex::module
-        SHiP::SHiPDataModel
+        SHiP::DataModel
         SHiP::Random
         ROOT::RIO
         ROOT::ROOTNTuple
-)
-target_include_directories(
-    read_sim_file
-    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 # Digitisation plugin
@@ -54,7 +51,7 @@ target_include_directories(
 )
 target_link_libraries(
     digitise_hits
-    PRIVATE phlex::module SHiP::SHiPDataModel SHiP::Random
+    PRIVATE phlex::module SHiP::DataModel SHiP::Random
 )
 
 # Digitised output module plugin
@@ -63,7 +60,7 @@ target_link_libraries(
     digitised_output_module
     PRIVATE
         phlex::module
-        SHiP::SHiPDataModel
+        SHiP::DataModel
         ROOT::Hist
         ROOT::RIO
         ROOT::ROOTHistUtil
@@ -79,7 +76,7 @@ target_include_directories(
 )
 target_link_libraries(
     make_test_input
-    PRIVATE SHiP::SHiPDataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
+    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
 )
 
 # Install

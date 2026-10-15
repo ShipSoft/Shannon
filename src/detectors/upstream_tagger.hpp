@@ -12,7 +12,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/detectors/UBTHit.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class UpstreamTagger {
    public:
@@ -29,4 +29,4 @@ class UpstreamTagger {
     GaussianSmearer smearer_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon

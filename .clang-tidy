@@ -59,9 +59,25 @@
 #   is the alias, so the modernize name is the one to negate. Either way, an
 #   opt-out means negating both names.
 #
-#   Deliberately absent: readability-identifier-naming CheckOptions. The check
-#   is enabled by readability-* but stays silent while unconfigured.
-#   Repositories ready to enforce a convention opt in with a layer file.
+#   readability-identifier-naming is configured for namespaces only. Every
+#   other identifier kind stays unset, so the check remains silent on it, and a
+#   repository that wants more opts in with a layer file (a .clang-tidy with
+#   InheritParentConfig: true in the directory whose declarations it governs;
+#   resolution is per declaring file, not per translation unit).
+#
+#   The namespace rule: SHiP is the single top-level namespace, spelled after
+#   the collaboration, and everything nested inside it is lower_case. So
+#   SHiP::geometry, SHiP::units, SHiP::aegir::g4.
+#
+#   NamespaceIgnoredRegexp exempts exactly SHiP, anchored at both ends, so a
+#   name that merely starts with it (SHiPGeometry, SHiPGeometryService) is still
+#   a finding.
+#
+#   It cannot express the other half of the convention: `ship` is lower_case and
+#   therefore passes this check, but it is the pre-2026 spelling we migrated off
+#   and must not come back. readability-identifier-naming has no forbidden-name
+#   option, so that half is a pygrep hook; see .pre-commit-hooks.yaml in this
+#   repository.
 ---
 Checks: >
   -*,
@@ -130,3 +146,5 @@ CheckOptions:
   readability-function-size.LineThreshold: 100
   readability-function-size.StatementThreshold: 50
   readability-function-size.BranchThreshold: 10
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.NamespaceIgnoredRegexp: '^SHiP$'

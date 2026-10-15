@@ -14,7 +14,7 @@
 #include <SHiP/SimHit.hpp>
 #include <SHiP/random/philox_rng.hpp>
 
-namespace Shannon {
+namespace SHiP::shannon {
 
 class GaussianSmearer {
    public:
@@ -35,4 +35,4 @@ class GaussianSmearer {
     double sigma_y_;
 };
 
-}  // namespace Shannon
+}  // namespace SHiP::shannon
