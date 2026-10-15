@@ -7,8 +7,10 @@
 //
 // This is a tool to generate random numbers approximately in order.
 // It does so by sampling from an approximate beta distribution.
-// The kth ordered statistic of a uniform distribution with n total 
+// The kth ordered statistic of a uniform distribution with n total
 // draws is distributed as a beta function beta(k, n-k+1)
+
+#include "common.hpp"
 
 #include <SHiP/random/philox_rng.hpp>
 #include <cmath>
@@ -18,11 +20,10 @@
 #include <string>
 #include <vector>
 
-#include "common.hpp"
-
 class approx_sorted_random {
    public:
-    approx_sorted_random(std::uint32_t seed, std::uint32_t stream = 0xBEEFCAFE, const double maxTime = 1., const std::uint64_t nPoT = 10000)
+    approx_sorted_random(std::uint32_t seed, std::uint32_t stream = 0xBEEFCAFE,
+                         const double maxTime = 1., const std::uint64_t nPoT = 10000)
         : m_maxTime(maxTime), m_n(checked_event_count(nPoT)), m_seed(seed), m_stream(stream) {
         if (m_maxTime <= 0.0)
             throw std::invalid_argument(

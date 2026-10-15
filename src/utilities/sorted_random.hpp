@@ -8,8 +8,10 @@
 //
 // This is a tool to generate times strictly in order. It does so by progressively splitting the
 // interval in half until your reach group size. Then it does uniform draws from the remaining and
-// sorts them. Slower than the approximate draw but is exactly in order and so gets the distribution of
-// times, and gaps between times right.
+// sorts them. Slower than the approximate draw but is exactly in order and so gets the distribution
+// of times, and gaps between times right.
+
+#include "common.hpp"
 
 #include <SHiP/random/philox_rng.hpp>
 #include <cmath>
@@ -18,8 +20,6 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#include "common.hpp"
 
 class sorted_random {
    public:
