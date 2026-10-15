@@ -1,3 +1,16 @@
+#pragma once
+
+// SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
+// read_sim_file.cpp — Phlex source plugin
+//
+// This is a tool to generate times strictly in order. It does so by progressively splitting the
+// interval in half until your reach group size. Then it does uniform draws from the remaining and
+// sorts them. Slower than the approximate draw but is exactly in order and so gets the distribution of
+// times, and gaps between times right.
+
 #include <SHiP/random/philox_rng.hpp>
 #include <cmath>
 #include <cstdint>
@@ -6,22 +19,17 @@
 #include <string>
 #include <vector>
 
-/*
-This is a tool to generate times strictly in order. It does so by progressively splitting the
-interval in half until your reach group size. Then it does uniform draws from the remaining and
-sorts them. Slower than the approximate draw but is exactly in order and so gets the distribution of
-times, and gaps between times right.
-*/
+#include "common.hpp"
 
 class sorted_random {
    public:
-    sorted_random(std::uint32_t seed, std::uint32_t key_hi = 0xBEEFCAFE, const double maxTime = 1.,
+    sorted_random(std::uint32_t seed, std::uint32_t stream = 0xBEEFCAFE, const double maxTime = 1.,
                   const std::uint64_t nPoT = 10000, std::uint64_t groupSize = 1000,
                   int cacheDepth = 10)
         : m_seed(seed),
-          m_stream(key_hi),
+          m_stream(stream),
           m_maxTime(maxTime),
-          m_n(nPoT),
+          m_n(checked_event_count(nPoT)),
           m_groupSize(groupSize),
           m_cacheDepth(cacheDepth) {
         if (m_groupSize > m_maxGroupSize) {
