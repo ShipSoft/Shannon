@@ -1,0 +1,33 @@
+name: "Advisory: build against library main"
+
+# Build this PR against the main branch of each ShipSoft library it uses,
+# one library at a time, from the nightly builds on prefix.dev/ship-nightly.
+# Advisory only: these jobs are not required checks, so a red job doesn't
+# block the merge. It means the PR (or the library's main) needs work before
+# the next library release. See pixi-main-deps.yml in ShipSoft/.github.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: main-deps-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  main-deps:
+    name: vs ${{ matrix.dep.name }} main (advisory)
+    strategy:
+      fail-fast: false
+      matrix:
+        dep:
+          - { name: ship-random, packages: '["ship-random"]' }
+          - { name: data-model, packages: '["shipdatamodel"]' }
+    uses: ShipSoft/.github/.github/workflows/pixi-main-deps.yml@main
+    with:
+      packages: ${{ matrix.dep.packages }}
+      tasks: '["configure", "build", "install", "test", "smoke"]'
