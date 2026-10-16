@@ -31,10 +31,13 @@ configure_file(ShannonConfig.h.in ShannonConfig.h)
 
 # Sim file reader plugin
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
+target_include_directories(
+    read_sim_file
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 target_link_libraries(
     read_sim_file
     PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
         phlex::module
         SHiP::DataModel
         SHiP::Random

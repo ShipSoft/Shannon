@@ -71,6 +71,13 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const hits_field = config.get<std::string>("hits_field", std::string{"sim_hits"});
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
     double const pot_sim{config.get<double>("pot", 10000)};  // Simulated protons on target
+    double const spill_time_ns = 1.2e9;                      // Total length of a spill in ns
+    double const nominal_pot_per_spill = 4e13;               // PoT per spill
+    // Negated inclusive range check so that NaN is rejected. Must run before pot_sim is
+    // used or converted to an integer.
+    if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill))
+        throw std::invalid_argument("pot must be between 1 and one spill (4e13).");
+    auto const n_events = static_cast<std::uint64_t>(std::llround(pot_sim));
     auto const time_gen_mode =
         config.get<std::string>("time_generator", std::string{"approximate"});
 
@@ -91,11 +98,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto evt_header_view = std::make_shared<ROOT::RNTupleView<SHiP::EventHeader>>(
         evt_header_reader->GetView<SHiP::EventHeader>("event_header"));
 
-    double const spill_time_ns = 1.2e9;         // Total length of a spill in ns
-    double const nominal_pot_per_spill = 4e13;  // PoT per spill
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
-    if (pot_sim > nominal_pot_per_spill)
-        throw std::runtime_error("Provided simulated PoT is greater than a single spill");
 
     double const high_time =
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
@@ -127,11 +130,12 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         .output_product("rntuple_source", "id", layer);
     if (time_gen_mode == "approximate") {
         register_time_provider(
-            m, std::make_shared<approx_sorted_random>(seed, time_offset_stream, high_time, pot_sim),
+            m,
+            std::make_shared<approx_sorted_random>(seed, time_offset_stream, high_time, n_events),
             std::move(evt_header_reader), std::move(evt_header_view), layer);
     } else if (time_gen_mode == "exact") {
         register_time_provider(
-            m, std::make_shared<sorted_random>(seed, time_offset_stream, high_time, pot_sim),
+            m, std::make_shared<sorted_random>(seed, time_offset_stream, high_time, n_events),
             std::move(evt_header_reader), std::move(evt_header_view), layer);
     } else {
         throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +

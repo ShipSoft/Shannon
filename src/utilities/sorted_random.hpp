@@ -11,8 +11,6 @@
 // sorts them. Slower than the approximate draw but is exactly in order and so gets the distribution
 // of times, and gaps between times right.
 
-#include "common.hpp"
-
 #include <SHiP/random/philox_rng.hpp>
 #include <cmath>
 #include <cstdint>
@@ -26,12 +24,20 @@ class sorted_random {
     sorted_random(std::uint32_t seed, std::uint32_t stream = 0xBEEFCAFE, const double maxTime = 1.,
                   const std::uint64_t nPoT = 10000, std::uint64_t groupSize = 1000,
                   int cacheDepth = 10)
-        : m_seed(seed),
+        : m_maxTime(maxTime),
+          m_seed(seed),
           m_stream(stream),
-          m_maxTime(maxTime),
-          m_n(checked_event_count(nPoT)),
+          m_n(nPoT),
           m_groupSize(groupSize),
           m_cacheDepth(cacheDepth) {
+        // Negated so that a NaN maxTime is rejected too.
+        if (!(m_maxTime > 0.0)) {
+            throw std::invalid_argument(
+                "The maximum time of the spill fraction must be positive. Check your options.");
+        }
+        if (m_n == 0) {
+            throw std::invalid_argument("The number of events to run over must be positive.");
+        }
         if (m_groupSize > m_maxGroupSize) {
             throw std::invalid_argument(
                 "You are trying to set a group size that is too large! The maximum allowed is " +

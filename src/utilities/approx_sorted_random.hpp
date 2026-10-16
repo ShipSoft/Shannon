@@ -10,8 +10,6 @@
 // The kth ordered statistic of a uniform distribution with n total
 // draws is distributed as a beta function beta(k, n-k+1)
 
-#include "common.hpp"
-
 #include <SHiP/random/philox_rng.hpp>
 #include <cmath>
 #include <cstdint>
@@ -24,10 +22,13 @@ class approx_sorted_random {
    public:
     approx_sorted_random(std::uint32_t seed, std::uint32_t stream = 0xBEEFCAFE,
                          const double maxTime = 1., const std::uint64_t nPoT = 10000)
-        : m_maxTime(maxTime), m_n(checked_event_count(nPoT)), m_seed(seed), m_stream(stream) {
-        if (m_maxTime <= 0.0)
+        : m_maxTime(maxTime), m_n(nPoT), m_seed(seed), m_stream(stream) {
+        // Negated so that a NaN maxTime is rejected too.
+        if (!(m_maxTime > 0.0))
             throw std::invalid_argument(
                 "The maximum time of the spill fraction must be positive. Check your options.");
+        if (m_n == 0)
+            throw std::invalid_argument("The number of events to run over must be positive.");
     };
     [[nodiscard]]
     double next(const std::uint64_t evtNumber) {
