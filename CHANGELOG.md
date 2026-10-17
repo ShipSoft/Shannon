@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-10-17
+
+### Refactor
+
+- [**breaking**] Move Shannon into the SHiP namespace
+
+### Miscellaneous
+
+- Add advisory builds against ShipSoft library mains
+
+### Build
+
+- Resolve SHiP packages from ship-experiment/stable
 ## [0.3.0] - 2026-10-14
 
 ### Features
@@ -80,7 +93,6 @@ All notable changes to this project will be documented in this file.
 
 - Pin data-model overlay install libdir to lib
 - Guard CMP0167 setting for CMake versions before 3.30
-
 ## [0.1.0] - 2026-07-13
 
 ### Features
