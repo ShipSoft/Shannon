@@ -9,7 +9,7 @@ platforms:
 environments:
   bench:
     channels:
-    - url: https://prefix.dev/ship/
+    - url: https://prefix.dev/ship-experiment/stable/
     - url: https://conda.anaconda.org/conda-forge/
     packages:
       linux-64:
@@ -400,15 +400,15 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/websocket-client-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda: https://prefix.dev/ship/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
-      - conda: https://prefix.dev/ship/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
-      - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
-      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/ship-random-0.2.0-h4616a5c_0.conda
   default:
     channels:
-    - url: https://prefix.dev/ship/
+    - url: https://prefix.dev/ship-experiment/stable/
     - url: https://conda.anaconda.org/conda-forge/
     packages:
       linux-64:
@@ -780,15 +780,15 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/websocket-client-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda: https://prefix.dev/ship/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
-      - conda: https://prefix.dev/ship/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
-      - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
-      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/ship-random-0.2.0-h4616a5c_0.conda
   lint:
     channels:
-    - url: https://prefix.dev/ship/
+    - url: https://prefix.dev/ship-experiment/stable/
     - url: https://conda.anaconda.org/conda-forge/
     indexes:
     - https://pypi.org/simple
@@ -1166,12 +1166,12 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/webencodings-0.5.1-pyhd8ed1ab_3.conda
       - conda: https://prefix.dev/conda-forge/noarch/websocket-client-1.9.2-pyhd8ed1ab_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
-      - conda: https://prefix.dev/ship/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
-      - conda: https://prefix.dev/ship/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
-      - conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
-      - conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
-      - conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
+      - conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/random123-1.14.0-h4616a5c_1.conda
+      - conda: https://prefix.dev/ship-experiment/stable/noarch/ship-random-0.2.0-h4616a5c_0.conda
       - pypi: https://files.pythonhosted.org/packages/04/53/f2815b34359959172a6931932adde8e631de727a697a858265690030b55b/gersemi-0.29.2-cp314-cp314-manylinux_2_28_x86_64.whl
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils-2.46.1-default_h4852527_102.conda
@@ -7841,7 +7841,7 @@ packages:
   run_exports: {}
   size: 24190
   timestamp: 1779159948016
-- conda: https://prefix.dev/ship/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
+- conda: https://prefix.dev/ship-experiment/stable/linux-64/mp-units-2.5.0-hb0f4dca_5.conda
   sha256: 98eb61e874a65c8172a6dc7ed7a111f68934c563955ff4448f14b681e8686dca
   md5: d32935557c13c811d14f573bf78c4490
   depends:
@@ -7855,7 +7855,7 @@ packages:
     - mp-units >=2.5.0,<2.6.0a0
   size: 110217
   timestamp: 1781445240307
-- conda: https://prefix.dev/ship/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
+- conda: https://prefix.dev/ship-experiment/stable/linux-64/shipdatamodel-0.6.0-h0518e97_0.conda
   sha256: 4d023fe4a80b1ca8c722583e9c3be3f2e5daaf7efb1d94d92a5ca6461ddc0088
   md5: a7c71bf628177d5717261fbb61789233
   depends:
@@ -7871,7 +7871,7 @@ packages:
     - shipdatamodel >=0.6.0,<0.7.0a0
   size: 101009
   timestamp: 1791901929889
-- conda: https://prefix.dev/ship/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
+- conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometry-0.2.1-hb0f4dca_3.conda
   sha256: c9699df7347d670cc366027959094ae3facafc3d3089ffcf47d5fad3e0936c4e
   md5: 06e252bd30b944fa69d0c6f961c19f1e
   depends:
@@ -7888,7 +7888,7 @@ packages:
     - shipgeometry >=0.2.1,<0.3.0a0
   size: 367435
   timestamp: 1786436182467
-- conda: https://prefix.dev/ship/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
+- conda: https://prefix.dev/ship-experiment/stable/linux-64/shipgeometryservice-0.4.0-hb0f4dca_0.conda
   sha256: 02b75ad33050d150376c2f680495ed8274884b299a1d8a91a0a59bea885575c1
   md5: 480771e5787cb36d23c450413258ff3f
   depends:
@@ -7907,14 +7907,14 @@ packages:
     - shipgeometryservice >=0.4.0,<0.5.0a0
   size: 62147
   timestamp: 1786436182468
-- conda: https://prefix.dev/ship/noarch/random123-1.14.0-h4616a5c_1.conda
+- conda: https://prefix.dev/ship-experiment/stable/noarch/random123-1.14.0-h4616a5c_1.conda
   sha256: ff55db42aa3b6f81456675f05d48546da04bea61e0e342188ab781c633586012
   md5: a43dc6c01f64145e2e9d8959c6d405f6
   license: BSD-3-Clause
   run_exports: {}
   size: 44148
   timestamp: 1781443807524
-- conda: https://prefix.dev/ship/noarch/ship-random-0.2.0-h4616a5c_0.conda
+- conda: https://prefix.dev/ship-experiment/stable/noarch/ship-random-0.2.0-h4616a5c_0.conda
   sha256: a276e44259ca9de018da31229e773a97099e02d2688ce8752f10530b4a54b1c6
   md5: 900d6717c365e803ceaf2669833242fc
   depends:
