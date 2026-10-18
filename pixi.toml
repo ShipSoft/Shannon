@@ -17,7 +17,9 @@ geant4 = ">=11.3"
 pythia8 = ">=8.3"
 random123 = "*"
 # SHiP::random::PhiloxRng, the per-spill digitisation RNG.
-ship-random = ">=0.2"
+# ship-random 0.3 only satisfies find_package(SHiPRandom 0.3) (SameMinorVersion),
+# so keep this in step with find_package(SHiPRandom 0.2) in CMakeLists.txt.
+ship-random = ">=0.2,<0.3"
 libjsonnet = "*"
 
 # C++ libraries
