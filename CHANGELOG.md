@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2026-10-18
+
+### Bug fixes
+
+- Read simulation files written with data-model 0.5
+
+### Miscellaneous
+
+- Build and test on linux-aarch64
+
 ## [0.4.0] - 2026-10-17
 
 ### Refactor
