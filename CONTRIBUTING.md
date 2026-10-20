@@ -6,6 +6,9 @@ Thank you for your interest in contributing to Shannon! As part of the SHiP Coll
 
 1. **Fork and Clone**: Create a fork of the repository and clone it locally.
 2. **Environment**: Ensure you have the required dependencies (ROOT, Geant4, Pythia8, Phlex, etc.). Using the SHiP software stack container is recommended.
+   The pixi `dev` environment is the default one plus gdb, e.g. `pixi run -e dev build`.
+   It can also build shipdatamodel from a sibling `../data-model` checkout in place of the
+   released package; the comment above `[feature.dev.dependencies]` in `pixi.toml` explains how.
 3. **Pre-commit Hooks**: We use [prek](https://github.com/j178/prek) to enforce coding standards, with the hook tools provided by the pixi `lint` environment. Install the hooks before making changes:
    ```bash
    pixi run install-hooks
