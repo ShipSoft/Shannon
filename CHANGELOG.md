@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-10-20
+
+Digitised output can differ from earlier releases in the last bit: ship-random
+0.4 computes the Gaussian smearing with `std::fma`, so the same seed now gives
+the same bits on every platform. The time offset is unchanged.
+
+### Build
+
+- Keep ship-random below 0.3
+- Move to ship-random 0.4
+
 ## [0.4.1] - 2026-10-18
 
 ### Bug fixes
