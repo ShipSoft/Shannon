@@ -14,7 +14,6 @@ local entries = 5;
       input_file:  '../aegir/fixed_target_mt_output.root',
       ntuple_name: 'events',
       layer:       'spill',
-      pot : 1000,
       time_generator: 'exact'
      },
   },

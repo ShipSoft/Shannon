@@ -29,6 +29,7 @@
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace phlex;
@@ -57,7 +58,7 @@ void register_time_provider(auto& m, std::shared_ptr<TimeGen> gen,
          "provide_time",
          [gen = std::move(gen), reader = std::move(reader),
           view = std::move(view)](data_cell_index const& id) -> double {
-             auto entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
+             auto const entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
              return gen->next((*view)(entry_index));
          },
          concurrency::serial)
@@ -66,34 +67,40 @@ void register_time_provider(auto& m, std::shared_ptr<TimeGen> gen,
 
 std::optional<double> read_pot_from_summary(std::string const& filename) {
     std::unique_ptr<TFile> file{TFile::Open(filename.c_str(), "READ")};
-    if (!file || file->IsZombie())
+    if (!file || file->IsZombie()) {
         throw std::runtime_error("cannot open " + filename);
+    }
 
-    auto* json = file->Get<TObjString>("file_summary");
-    if (!json)
+    const auto* json = file->Get<TObjString>("file_summary");
+    if (!json) {
         return std::nullopt;  // older aegir file, no summary
+    }
 
     auto const summary = boost::json::parse(json->GetString().Data()).as_object();
-    if (summary.at("schema_version").to_number<int>() != 1)
+    if (summary.at("schema_version").to_number<int>() != 1) {
         throw std::runtime_error("unsupported file_summary schema_version");
+    }
 
-    auto const n_generated = summary.at("n_events_processed").to_number<std::uint64_t>();
+    auto const n_processed = summary.at("n_events_processed").to_number<std::uint64_t>();
     auto const n_written = summary.at("n_events_written").to_number<std::uint64_t>();
     auto const max_id = summary.at("max_event_number_saved").to_number<std::int64_t>();
 
     // Written can equal generated when nothing was filtered.
-    if (n_written > n_generated)
+    if (n_written > n_processed) {
         throw std::runtime_error("file_summary: n_events_written (" + std::to_string(n_written) +
-                                 ") exceeds n_events_generated (" + std::to_string(n_generated) +
+                                 ") exceeds n_events_processed (" + std::to_string(n_processed) +
                                  ")");
-    // Event ids are 0-based, so the largest valid id is n_generated - 1
+    }
+    // Event ids are 0-based, so the largest valid id is n_processed - 1
     // (-1 if no events were written).
-    if (max_id >= static_cast<std::int64_t>(n_generated))
-        throw std::runtime_error("file_summary: max_aegir_event_id_saved (" +
-                                 std::to_string(max_id) + ") is not below n_events_generated (" +
-                                 std::to_string(n_generated) + ")");
+    if (max_id >= static_cast<std::int64_t>(n_processed))
+        if (std::cmp_greater_equal(max_id, n_processed)) {
+            throw std::runtime_error("file_summary: max_event_id_saved (" + std::to_string(max_id) +
+                                     ") is not below n_events_processed (" +
+                                     std::to_string(n_processed) + ")");
+        }
 
-    return static_cast<double>(n_generated);
+    return static_cast<double>(n_processed);
 }
 
 }  // namespace
@@ -160,7 +167,8 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto evt_number_view = std::make_shared<ROOT::RNTupleView<std::uint64_t>>(
         evt_number_reader->GetView<std::uint64_t>("event_number"));
 
-    auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
+    // Note this is a separate seed than the one used for the smearing in the detector digitisations
+    auto const time_seed = static_cast<std::uint32_t>(config.get<int>("time_seed", 0));
 
     m.provide(
          "read_rntuple",
@@ -188,13 +196,13 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
     if (time_gen_mode == "approximate") {
-        register_time_provider(
-            m,
-            std::make_shared<approx_sorted_random>(seed, time_offset_stream, high_time, n_events),
-            std::move(evt_number_reader), std::move(evt_number_view), layer);
+        register_time_provider(m,
+                               std::make_shared<approx_sorted_random>(time_seed, time_offset_stream,
+                                                                      high_time, n_events),
+                               std::move(evt_number_reader), std::move(evt_number_view), layer);
     } else if (time_gen_mode == "exact") {
         register_time_provider(
-            m, std::make_shared<sorted_random>(seed, time_offset_stream, high_time, n_events),
+            m, std::make_shared<sorted_random>(time_seed, time_offset_stream, high_time, n_events),
             std::move(evt_number_reader), std::move(evt_number_view), layer);
     } else {
         throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +

@@ -35,10 +35,10 @@ int main(int argc, char* argv[]) {
     }
 
     auto model = ROOT::RNTupleModel::Create();
-    auto particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
-    auto hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
-    auto header = model->MakeField<SHiP::EventHeader>("event_header");
-    auto evt_number = model->MakeField<std::uint64_t>("event_number");
+    auto const particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
+    auto const hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
+    auto const header = model->MakeField<SHiP::EventHeader>("event_header");
+    auto const evt_number = model->MakeField<std::uint64_t>("event_number");
     auto writer = ROOT::RNTupleWriter::Recreate(std::move(model), "events", filename);
 
     constexpr SHiP::detector_id detectors[] = {
@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
 
         particles->clear();
         hits->clear();
-        *header = SHiP::EventHeader{1.0, -1};
+        *header = SHiP::EventHeader{};
         *evt_number = event;
 
         auto const n_tracks = 1 + static_cast<int>(rng.uniform(0.0, 3.0));
