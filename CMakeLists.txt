@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(shannon VERSION 0.3.0 LANGUAGES CXX)
+project(shannon VERSION 0.5.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,7 +13,7 @@ set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
 
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
-find_package(SHiPRandom 0.2 REQUIRED)
+find_package(SHiPRandom 0.4 REQUIRED)
 
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost

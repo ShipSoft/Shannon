@@ -4,12 +4,18 @@
 [workspace]
 name = "shannon"
 description = "Phlex-based digitisation framework for the SHiP experiment"
-channels = ["https://prefix.dev/ship", "conda-forge"]
-platforms = ["linux-64"]
+channels = ["https://prefix.dev/ship-experiment/stable", "conda-forge"]
+platforms = ["linux-64", "linux-aarch64"]
+# Enables source dependencies for the (opt-in) multi-package dev workflow
+# below; inert for the other environments.
+preview = ["pixi-build"]
+requires-pixi = ">=0.68"
 
 [dependencies]
-# SHiP/HEP packages (prefix.dev/ship + conda-forge)
-shipdatamodel = ">=0.6.0"
+# SHiP/HEP packages (prefix.dev/ship-experiment/stable + conda-forge). NB:
+# shipdatamodel is declared in [feature.released] below, not here, so the dev
+# environment can swap it for a sibling source build without this channel
+# spec in scope.
 shipgeometryservice = "*"
 phlex = ">=0.4.1"
 root = ">=6.36"
@@ -17,7 +23,9 @@ geant4 = ">=11.3"
 pythia8 = ">=8.3"
 random123 = "*"
 # SHiP::random::PhiloxRng, the per-spill digitisation RNG.
-ship-random = ">=0.2"
+# ship-random accepts only the requested minor in find_package (SameMinorVersion),
+# so keep this in step with find_package(SHiPRandom 0.4) in CMakeLists.txt.
+ship-random = ">=0.4,<0.5"
 libjsonnet = "*"
 
 # C++ libraries
@@ -45,6 +53,15 @@ cxx-compiler = "*"
 # supplies. Both come from the same llvm feedstock, so conda keeps them in step.
 clang = ">=19"
 clang-tools = ">=19"
+
+# shipdatamodel as its released conda build (prefix.dev/ship-experiment/stable).
+# Held in a feature that every environment pulls in, deliberately NOT in the
+# base [dependencies]: those are shared by all environments, so a channel spec
+# there stays in scope for dev even when [feature.dev] declares a path
+# dependency, and the solver can pick the channel binary over the sibling
+# checkout (ShipSoft/aegir#90).
+[feature.released.dependencies]
+shipdatamodel = ">=0.6.0"
 
 [activation]
 scripts = ["activate.sh"]
@@ -133,7 +150,25 @@ sed -i 's#"$PREK" hook-impl#pixi run -e lint prek hook-impl#' "$hooks/pre-commit
 sed -i 's#"$PREK" hook-impl#pixi run -e lint prek hook-impl#' "$hooks/commit-msg"
 '''
 
+# --- Multi-package development ------------------------------------------
+# The dev environment adds a debugger to the default one. It can also build
+# shipdatamodel from a sibling checkout instead of the released conda
+# package: uncomment the dependency below (../data-model has to exist and to
+# package itself as a pixi-build source dependency), drop "released" from the
+# dev environment's features in [environments], run `pixi lock`, then
+# `pixi run -e dev build`/`test`/`smoke`. If "released" stays, the released
+# shipdatamodel is still in scope and can win the solve.
+#
+# Leave it commented out in whatever you commit. A lock file that records the
+# source dependency cannot be resolved without the sibling checkout, which
+# breaks `pixi install --locked` for every environment, not just dev.
+[feature.dev.dependencies]
+# shipdatamodel = { path = "../data-model" }
+gdb = "*"
+
 [environments]
-default = { solve-group = "default" }
-bench = { features = ["bench"], solve-group = "default" }
-lint = { features = ["lint"], solve-group = "lint" }
+default = { features = ["released"], solve-group = "default" }
+bench = { features = ["bench", "released"], solve-group = "default" }
+lint = { features = ["lint", "released"], solve-group = "lint" }
+# Drop "released" here when building shipdatamodel from source, see above.
+dev = { features = ["dev", "released"] }

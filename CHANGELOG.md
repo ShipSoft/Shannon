@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-10-20
+
+Digitised output can differ from earlier releases in the last bit: ship-random
+0.4 computes the Gaussian smearing with `std::fma`, so the same seed now gives
+the same bits on every platform. The time offset is unchanged.
+
+### Build
+
+- Keep ship-random below 0.3
+- Move to ship-random 0.4
+
+## [0.4.1] - 2026-10-18
+
+### Bug fixes
+
+- Read simulation files written with data-model 0.5
+
+### Miscellaneous
+
+- Build and test on linux-aarch64
+
+## [0.4.0] - 2026-10-17
+
+### Refactor
+
+- [**breaking**] Move Shannon into the SHiP namespace
+
+### Miscellaneous
+
+- Add advisory builds against ShipSoft library mains
+
+### Build
+
+- Resolve SHiP packages from ship-experiment/stable
 ## [0.3.0] - 2026-10-14
 
 ### Features
@@ -80,7 +114,6 @@ All notable changes to this project will be documented in this file.
 
 - Pin data-model overlay install libdir to lib
 - Guard CMP0167 setting for CMake versions before 3.30
-
 ## [0.1.0] - 2026-07-13
 
 ### Features

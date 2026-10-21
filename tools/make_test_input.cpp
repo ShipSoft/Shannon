@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
         }
         writer->Fill();
     }
-
+    writer.reset();
     boost::json::object const summary{
         {"schema_version", 1},
         {"producer", "aegir"},

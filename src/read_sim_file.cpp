@@ -128,6 +128,21 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
     auto const n_events = static_cast<std::uint64_t>(std::llround(pot_sim));
 
+    // Open the file through TFile once so ROOT learns the class layouts stored
+    // in it. Without them, ROOT 6.40.04 aborts in RFieldMeta when data-model's
+    // I/O rules have to convert an older class version (e.g. aegir 0.4 output,
+    // written with data-model 0.5). RNTupleReader::Open by path does not load
+    // them. The fix is on ROOT's 6.40 patches branch (root-project/root#23293)
+    // but not in a release yet; drop this block once pixi.lock has it.
+    // The layouts stay registered after the file is closed, so the readers
+    // below keep their own independent file handles.
+    {
+        std::unique_ptr<TFile> const file{TFile::Open(input_file.c_str())};
+        if (!file || file->IsZombie()) {
+            throw std::runtime_error("read_sim_file: cannot open '" + input_file + "'");
+        }
+    }
+
     // Each provider owns its own reader: providers are separate graph nodes
     // that can run concurrently, and RNTupleReader is not thread-safe.
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
