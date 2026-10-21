@@ -25,7 +25,9 @@
 #include <boost/json.hpp>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <memory>
+#include <optional>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
@@ -121,16 +123,23 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // First try and get some useful numbers out of the input file and the config
     auto const pot_from_file = read_pot_from_summary(input_file);
     auto const pot_from_cfg = config.get_if_present<double>("pot");
-    if (!pot_from_file && !pot_from_cfg)
+    if (!pot_from_file && !pot_from_cfg) {
         throw std::invalid_argument("no file_summary in input and no 'pot' in config");
+    }
 
     // File summary takes precedence but a warning just in case
-    if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg)
+    if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg) {
         spdlog::warn(
             "read_sim_file: config pot ({}) disagrees with file_summary of '{}' ({}); "
             "using file_summary",
             *pot_from_cfg, input_file, *pot_from_file);
+    }
     double const pot_sim = pot_from_file ? *pot_from_file : *pot_from_cfg;
+    if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill)) {
+        throw std::invalid_argument(std::format(
+            "read_sim_file: pot must be a finite value in [1, nominal_pot_per_spill = {:g}]",
+            nominal_pot_per_spill));
+    }
     double const high_time =
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
     auto const n_events = static_cast<std::uint64_t>(std::llround(pot_sim));
