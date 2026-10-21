@@ -173,8 +173,8 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
 
     std::shared_ptr<ROOT::RNTupleReader> evt_number_reader =
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
-    auto evt_number_view = std::make_shared<ROOT::RNTupleView<std::uint64_t>>(
-        evt_number_reader->GetView<std::uint64_t>("event_number"));
+    bool const has_event_number = evt_number_reader->GetDescriptor().FindFieldId("event_number") !=
+                                  ROOT::kInvalidDescriptorId;
 
     // Note this is a separate seed than the one used for the smearing in the detector digitisations
     auto const time_seed = static_cast<std::uint32_t>(config.get<int>("time_seed", 0));
@@ -204,17 +204,39 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     m.provide(
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
+    if (time_gen_mode != "approximate" && time_gen_mode != "exact") {
+        throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +
+                                    time_gen_mode);
+    }
+
+    // Without event numbers there is nothing to order the times by, so fall
+    // back to uniform times seeded from the entry index.
+    if (!has_event_number) {
+        spdlog::warn(
+            "read_sim_file: no 'event_number' field in '{}'; assigning uniform random times",
+            input_file);
+        m.provide(
+             "provide_time",
+             [time_seed, high_time](data_cell_index const& id) -> double {
+                 SHiP::random::PhiloxRng rng{time_seed, time_offset_stream, id.number()};
+                 return rng.uniform(0.0, high_time);
+             },
+             concurrency::unlimited)
+            .output_product("rntuple_source", "time", layer);
+        return;
+    }
+
+    auto evt_number_view = std::make_shared<ROOT::RNTupleView<std::uint64_t>>(
+        evt_number_reader->GetView<std::uint64_t>("event_number"));
+
     if (time_gen_mode == "approximate") {
         register_time_provider(m,
                                std::make_shared<approx_sorted_random>(time_seed, time_offset_stream,
                                                                       high_time, n_events),
                                std::move(evt_number_reader), std::move(evt_number_view), layer);
-    } else if (time_gen_mode == "exact") {
+    } else {
         register_time_provider(
             m, std::make_shared<sorted_random>(time_seed, time_offset_stream, high_time, n_events),
             std::move(evt_number_reader), std::move(evt_number_view), layer);
-    } else {
-        throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +
-                                    time_gen_mode);
     }
 }

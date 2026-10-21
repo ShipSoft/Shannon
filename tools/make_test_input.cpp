@@ -28,12 +28,11 @@
 int main(int argc, char* argv[]) {
     std::string const filename = argc > 1 ? argv[1] : "smoke_input.root";
     auto const n_events = argc > 2 ? std::stoul(argv[2]) : 10UL;
-    // The event loop counts (and seeds the RNG) with a uint64_t.
-    if (n_events > std::numeric_limits<std::uint64_t>::max()) {
-        std::fprintf(stderr, "n_events out of range: %lu\n", n_events);
+
+    if (n_events == 0) {
+        std::fprintf(stderr, "n_events must be at least 1\n");
         return 1;
     }
-
     auto model = ROOT::RNTupleModel::Create();
     auto const particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
     auto const hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
@@ -90,7 +89,7 @@ int main(int argc, char* argv[]) {
         {"n_events_requested", n_events},
         {"n_events_processed", n_events},
         {"n_events_written", n_events},
-        {"max_event_number_saved", n_events - 1},
+        {"max_event_number_saved", static_cast<std::int64_t>(n_events) - 1},
     };
 
     auto file = ROOT::Experimental::RFile::Update(filename);
