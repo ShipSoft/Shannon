@@ -18,6 +18,7 @@ find_package(SHiPRandom 0.2 REQUIRED)
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost
 endif()
+find_package(Boost REQUIRED COMPONENTS json)
 find_package(spdlog REQUIRED)
 find_package(phlex 0.4.1 REQUIRED)
 find_package(
@@ -43,6 +44,7 @@ target_link_libraries(
         SHiP::Random
         ROOT::RIO
         ROOT::ROOTNTuple
+        Boost::json
 )
 
 # Digitisation plugin
@@ -79,7 +81,7 @@ target_include_directories(
 )
 target_link_libraries(
     make_test_input
-    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
+    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random Boost::json
 )
 
 # Install

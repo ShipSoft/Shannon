@@ -12,6 +12,8 @@
 // of times, and gaps between times right.
 
 #include <SHiP/random/philox_rng.hpp>
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <memory>
