@@ -8,13 +8,17 @@
 // (sim_particles + sim_hits per event), with hits covering all detector
 // IDs, so the digitisation workflow can run without Geant4 or aegir.
 
+#include <ROOT/RFile.hxx>
 #include <ROOT/RNTupleModel.hxx>
 #include <ROOT/RNTupleWriter.hxx>
+#include <TObjString.h>
 
+#include <SHiP/EventHeader.hpp>
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
 #include <SHiP/detectors/detector_id.hpp>
 #include <SHiP/random/philox_rng.hpp>
+#include <boost/json.hpp>
 #include <cstdint>
 #include <cstdio>
 #include <limits>
@@ -24,15 +28,16 @@
 int main(int argc, char* argv[]) {
     std::string const filename = argc > 1 ? argv[1] : "smoke_input.root";
     auto const n_events = argc > 2 ? std::stoul(argv[2]) : 10UL;
-    // The event loop counts (and seeds the RNG) with a uint32_t.
-    if (n_events > std::numeric_limits<std::uint32_t>::max()) {
-        std::fprintf(stderr, "n_events out of range: %lu\n", n_events);
+
+    if (n_events == 0) {
+        std::fprintf(stderr, "n_events must be at least 1\n");
         return 1;
     }
-
     auto model = ROOT::RNTupleModel::Create();
-    auto particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
-    auto hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
+    auto const particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
+    auto const hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
+    auto const header = model->MakeField<SHiP::EventHeader>("event_header");
+    auto const evt_number = model->MakeField<std::uint64_t>("event_number");
     auto writer = ROOT::RNTupleWriter::Recreate(std::move(model), "events", filename);
 
     constexpr SHiP::detector_id detectors[] = {
@@ -40,11 +45,13 @@ int main(int argc, char* argv[]) {
         SHiP::detector_id::StrawTubes, SHiP::detector_id::Calorimeter,
         SHiP::detector_id::TimingDetector};
 
-    for (std::uint32_t event = 0; event < n_events; ++event) {
+    for (std::uint64_t event = 0; event < n_events; ++event) {
         SHiP::random::PhiloxRng rng{0, 0x7E57DA7A, event};
 
         particles->clear();
         hits->clear();
+        *header = SHiP::EventHeader{};
+        *evt_number = event;
 
         auto const n_tracks = 1 + static_cast<int>(rng.uniform(0.0, 3.0));
         for (int track = 0; track < n_tracks; ++track) {
@@ -73,6 +80,21 @@ int main(int argc, char* argv[]) {
         }
         writer->Fill();
     }
+    writer.reset();
+    boost::json::object const summary{
+        {"schema_version", 1},
+        {"producer", "aegir"},
+        {"mode", "MC"},
+        {"filter_empty", true},
+        {"n_events_requested", n_events},
+        {"n_events_processed", n_events},
+        {"n_events_written", n_events},
+        {"max_event_number_saved", static_cast<std::int64_t>(n_events) - 1},
+    };
+
+    auto file = ROOT::Experimental::RFile::Update(filename);
+    TObjString const json{boost::json::serialize(summary).c_str()};
+    file->Put("file_summary", json);
 
     std::printf("Wrote %lu events to %s\n", n_events, filename.c_str());
     return 0;
