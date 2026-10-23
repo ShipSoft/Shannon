@@ -127,14 +127,15 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         throw std::invalid_argument("no file_summary in input and no 'pot' in config");
     }
 
-    // File summary takes precedence but a warning just in case
+    // Config takes precedence for the simulated time, but a warning just in case
     if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg) {
         spdlog::warn(
             "read_sim_file: config pot ({}) disagrees with file_summary of '{}' ({}); "
-            "using file_summary",
+            "using config for the simulated time, file_summary for the number of events",
             *pot_from_cfg, input_file, *pot_from_file);
     }
-    double const pot_sim = pot_from_file ? *pot_from_file : *pot_from_cfg;
+
+    double const pot_sim = pot_from_cfg ? *pot_from_cfg : *pot_from_file;
     if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill)) {
         throw std::invalid_argument(std::format(
             "read_sim_file: pot must be a finite value in [1, nominal_pot_per_spill = {:g}]",
@@ -142,7 +143,11 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     }
     double const high_time =
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
-    auto const n_events = static_cast<std::uint64_t>(std::llround(pot_sim));
+    // Event numbers run over the events aegir processed; that's only the PoT
+    // count for PoT-based samples (for a particle gun the config pot just sets
+    // how much spill time the events are spread over).
+    auto const n_events =
+        static_cast<std::uint64_t>(std::llround(pot_from_file ? *pot_from_file : pot_sim));
 
     // Open the file through TFile once so ROOT learns the class layouts stored
     // in it. Without them, ROOT 6.40.04 aborts in RFieldMeta when data-model's
