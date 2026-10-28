@@ -8,8 +8,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Ensure plugin modules retain DT_NEEDED entries for all linked libraries,
 # even if no symbols are directly referenced at link time (e.g. ROOT
 # dictionary-only dependencies like SHiPDataModel's collection proxies).
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed")
-set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed")
+# Apple's linker has no --no-as-needed; its counterpart of --as-needed is
+# -dead_strip_dylibs (in conda-forge's LDFLAGS), so drop that instead.
+if(APPLE)
+    foreach(flags CMAKE_SHARED_LINKER_FLAGS CMAKE_MODULE_LINKER_FLAGS)
+        string(REPLACE "-Wl,-dead_strip_dylibs" "" ${flags} "${${flags}}")
+    endforeach()
+else()
+    set(CMAKE_SHARED_LINKER_FLAGS
+        "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-as-needed"
+    )
+    set(CMAKE_MODULE_LINKER_FLAGS
+        "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-as-needed"
+    )
+endif()
 
 # Dependencies
 find_package(SHiPDataModel REQUIRED)
