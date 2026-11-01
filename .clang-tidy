@@ -76,8 +76,10 @@
 #   It cannot express the other half of the convention: `ship` is lower_case and
 #   therefore passes this check, but it is the pre-2026 spelling we migrated off
 #   and must not come back. readability-identifier-naming has no forbidden-name
-#   option, so that half is a pygrep hook; see .pre-commit-hooks.yaml in this
-#   repository.
+#   option, so that half is the forbid-ship-namespace pygrep hook, defined in
+#   .pre-commit-hooks.yaml in ShipSoft/.github. A repository opts in with a
+#   `repo: https://github.com/ShipSoft/.github` entry in its
+#   .pre-commit-config.yaml; this file cannot do that for it.
 ---
 Checks: >
   -*,
