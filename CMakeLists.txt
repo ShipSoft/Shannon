@@ -73,6 +73,13 @@ target_link_libraries(
         spdlog::spdlog
 )
 
+# Driver plugin: one "spill" data cell per entry of the input RNTuple
+add_library(rntuple_entries_driver MODULE src/rntuple_entries_driver.cpp)
+target_link_libraries(
+    rntuple_entries_driver
+    PRIVATE phlex::module ROOT::ROOTNTuple spdlog::spdlog
+)
+
 # Smoke-test input generator (build-only, not installed)
 add_executable(make_test_input tools/make_test_input.cpp)
 target_include_directories(
@@ -87,7 +94,12 @@ target_link_libraries(
 # Install
 include(GNUInstallDirs)
 
-set(PLUGIN_TARGETS read_sim_file digitise_hits digitised_output_module)
+set(PLUGIN_TARGETS
+    read_sim_file
+    digitise_hits
+    digitised_output_module
+    rntuple_entries_driver
+)
 
 install(TARGETS ${PLUGIN_TARGETS} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY workflows/ DESTINATION share/shannon/workflows)

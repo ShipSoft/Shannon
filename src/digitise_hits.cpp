@@ -103,6 +103,13 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
     auto const seed = static_cast<std::uint32_t>(config.get<int>("seed", 0));
 
+    // pot moved to the read_sim_file source. phlex ignores unknown keys, so
+    // without this check an old setting would silently change the time window.
+    if (config.get_if_present<double>("pot")) {
+        throw std::invalid_argument(
+            "digitise_hits: 'pot' is no longer read here; set it on the read_sim_file source");
+    }
+
     m.transform(
          "digitise_hits",
          [seed, digitiser = Digitiser{}](data_cell_index const& id,

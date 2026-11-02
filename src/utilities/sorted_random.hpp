@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// read_sim_file.cpp — Phlex source plugin
+// sorted_random.hpp
 //
 // This is a tool to generate times strictly in order. It does so by progressively splitting the
 // interval in half until your reach group size. Then it does uniform draws from the remaining and
@@ -32,6 +32,11 @@ class sorted_random {
           m_n(nPoT),
           m_groupSize(groupSize),
           m_cacheDepth(cacheDepth) {
+        if (m_cacheDepth < 0 || m_cacheDepth > m_maxCacheDepth) {
+            throw std::invalid_argument("The cache depth must be between 0 (no cache) and " +
+                                        std::to_string(m_maxCacheDepth));
+        }
+
         // Negated so that a NaN maxTime is rejected too.
         if (!(m_maxTime > 0.0)) {
             throw std::invalid_argument(
@@ -125,6 +130,10 @@ class sorted_random {
     }
 
     void make_cache(const int n_layers = 10) {
+        if (n_layers == 0) {
+            return;  // No cache
+        }
+
         const std::size_t size = std::size_t{1} << n_layers;
         m_cache.assign(size, 0.0);
         std::vector<Group> groups(size);  // temporary, freed when we return
@@ -155,6 +164,8 @@ class sorted_random {
     std::uint32_t m_stream;
     std::uint64_t m_n;
     std::uint64_t m_groupSize = 1000;
+    static constexpr int m_maxCacheDepth =
+        30;  // This keeps the memory requirement for the cache manageable
     const int m_cacheDepth;
     static constexpr std::uint64_t m_maxGroupSize = 1000;
 };

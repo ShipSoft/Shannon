@@ -1,20 +1,21 @@
-local entries = 5;
+local input_file = '../aegir/fixed_target_mt_output.root';
+local ntuple_name = 'events';
 {
   stage: 'digitisation',
   driver: {
-    cpp: 'generate_layers',
-    layers: {
-      spill: { parent: 'job', total: entries},
-    },
+    cpp: 'rntuple_entries_driver',
+    input_file: input_file,
+    ntuple_name: ntuple_name,
+    layer: 'spill',
+    // max_events: 100,  // uncomment for a quick partial run
   },
 
   sources: {
     rntuple_source: {
       cpp: 'read_sim_file',
-      input_file:  '../aegir/fixed_target_mt_output.root',
-      ntuple_name: 'events',
+      input_file:  input_file,
+      ntuple_name: ntuple_name,
       layer:       'spill',
-      time_generator: 'exact'
      },
   },
 
@@ -25,7 +26,7 @@ local entries = 5;
      },
     output: {
       cpp: 'digitised_output_module',
-      rntuple_file: 'digitised_hits_time.root',
+      rntuple_file: 'digitised_hits.root',
     },
   },
 }

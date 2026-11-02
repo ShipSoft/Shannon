@@ -24,10 +24,13 @@
 #include <SHiP/random/philox_rng.hpp>
 #include <boost/json.hpp>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <format>
+#include <limits>
 #include <memory>
 #include <optional>
+#include <random>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
@@ -38,12 +41,6 @@ using namespace phlex;
 using namespace phlex::experimental::literals;
 constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
 
-// This is a class to generate numbers in an approximately ascending time order.
-// The key point is that the nth order statistic of a uniform distribution is
-// distributed according to a beta distribution.
-// Because you are drawing from a distribution the results are not strictly ordered - but you
-// can execute this in any order. The exact solution from Bentley and Saxe would have to be executed
-// serially and there is no guarantee phlex will pass each row in sequence.
 namespace {
 template <typename T>
 concept TimeGenerator = requires(T& g, std::uint64_t n) {
@@ -85,7 +82,11 @@ std::optional<double> read_pot_from_summary(std::string const& filename) {
 
     auto const n_processed = summary.at("n_events_processed").to_number<std::uint64_t>();
     auto const n_written = summary.at("n_events_written").to_number<std::uint64_t>();
-    auto const max_id = summary.at("max_event_number_saved").to_number<std::int64_t>();
+    // null when no event was written.
+    auto const& max_id_value = summary.at("max_event_number_saved");
+    auto const max_id = max_id_value.is_null()
+                            ? std::nullopt
+                            : std::optional{max_id_value.to_number<std::int64_t>()};
 
     // Written can equal generated when nothing was filtered.
     if (n_written > n_processed) {
@@ -93,16 +94,35 @@ std::optional<double> read_pot_from_summary(std::string const& filename) {
                                  ") exceeds n_events_processed (" + std::to_string(n_processed) +
                                  ")");
     }
-    // Event ids are 0-based, so the largest valid id is n_processed - 1
-    // (-1 if no events were written).
-    if (max_id >= static_cast<std::int64_t>(n_processed))
-        if (std::cmp_greater_equal(max_id, n_processed)) {
-            throw std::runtime_error("file_summary: max_event_id_saved (" + std::to_string(max_id) +
-                                     ") is not below n_events_processed (" +
-                                     std::to_string(n_processed) + ")");
-        }
+    // Event ids are 0-based, so the largest valid id is n_processed - 1.
+    if (max_id && std::cmp_greater_equal(*max_id, n_processed)) {
+        throw std::runtime_error("file_summary: max_event_number_saved (" +
+                                 std::to_string(*max_id) + ") is not below n_events_processed (" +
+                                 std::to_string(n_processed) + ")");
+    }
 
     return static_cast<double>(n_processed);
+}
+
+// Reproducibility is opt-in, as in aegir: without a configured time_seed, draw
+// one so independent jobs get independent times, and log it so any run can
+// still be reproduced.
+std::uint32_t resolve_time_seed(phlex::configuration const& config) {
+    auto const configured = config.get_if_present<std::int64_t>("time_seed");
+    if (configured && (*configured < 0 ||
+                       std::cmp_greater(*configured, std::numeric_limits<std::uint32_t>::max()))) {
+        throw std::invalid_argument("read_sim_file: time_seed " + std::to_string(*configured) +
+                                    " is outside the valid range [0, 4294967295]");
+    }
+    if (configured) {
+        return static_cast<std::uint32_t>(*configured);
+    }
+    auto const seed = static_cast<std::uint32_t>(std::random_device{}());
+    spdlog::info(
+        "read_sim_file: no time_seed configured; drew {}. Set 'time_seed: {}' to reproduce this "
+        "run",
+        seed, seed);
+    return seed;
 }
 
 }  // namespace
@@ -120,34 +140,16 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const time_gen_mode =
         config.get<std::string>("time_generator", std::string{"approximate"});
 
-    // First try and get some useful numbers out of the input file and the config
-    auto const pot_from_file = read_pot_from_summary(input_file);
-    auto const pot_from_cfg = config.get_if_present<double>("pot");
-    if (!pot_from_file && !pot_from_cfg) {
-        throw std::invalid_argument("no file_summary in input and no 'pot' in config");
+    if (time_gen_mode != "approximate" && time_gen_mode != "exact") {
+        throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +
+                                    time_gen_mode);
     }
-
-    // Config takes precedence for the simulated time, but a warning just in case
-    if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg) {
-        spdlog::warn(
-            "read_sim_file: config pot ({}) disagrees with file_summary of '{}' ({}); "
-            "using config for the simulated time, file_summary for the number of events",
-            *pot_from_cfg, input_file, *pot_from_file);
-    }
-
-    double const pot_sim = pot_from_cfg ? *pot_from_cfg : *pot_from_file;
-    if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill)) {
-        throw std::invalid_argument(std::format(
-            "read_sim_file: pot must be a finite value in [1, nominal_pot_per_spill = {:g}]",
-            nominal_pot_per_spill));
-    }
-    double const high_time =
-        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
-    // Event numbers run over the events aegir processed; that's only the PoT
-    // count for PoT-based samples (for a particle gun the config pot just sets
-    // how much spill time the events are spread over).
-    auto const n_events =
-        static_cast<std::uint64_t>(std::llround(pot_from_file ? *pot_from_file : pot_sim));
+    // This is an option for the exact generator to set the cache depth. Only change if you know
+    // what you are doing
+    auto const time_cache_depth = config.get<int>("time_cache_depth", 10);
+    // This is an option for the exact generator to set the max size of the group before switching
+    // to uniform sample. Only change if you know what you are doing
+    auto const max_group_size = config.get<int>("max_group_size", 1000);
 
     // Open the file through TFile once so ROOT learns the class layouts stored
     // in it. Without them, ROOT 6.40.04 aborts in RFieldMeta when data-model's
@@ -168,6 +170,54 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // that can run concurrently, and RNTupleReader is not thread-safe.
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
+
+    // Check before the pot logic, which would otherwise report n_events_processed = 0
+    // as a bad pot value. Providers index entries directly, so an empty ntuple
+    // can't be digitised.
+    if (particle_reader->GetNEntries() == 0) {
+        throw std::runtime_error(
+            std::format("read_sim_file: '{}' has no entries in ntuple '{}'; nothing to digitise",
+                        input_file, ntuple_name));
+    }
+
+    // First try and get some useful numbers out of the input file and the config
+    auto const pot_from_file = read_pot_from_summary(input_file);
+    auto const pot_from_cfg = config.get_if_present<double>("pot");
+    if (!pot_from_file && !pot_from_cfg) {
+        throw std::invalid_argument("no file_summary in input and no 'pot' in config");
+    }
+
+    // Config takes precedence for the simulated time, but a warning just in case
+    if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg) {
+        spdlog::warn(
+            "read_sim_file: config pot ({}) disagrees with file_summary of '{}' ({}); "
+            "using config for the simulated time, file_summary for the number of events",
+            *pot_from_cfg, input_file, *pot_from_file);
+    }
+
+    // file_summary doesn't say what kind of source made the sample, so a
+    // particle-gun file without a config pot can't be told apart from a PoT one.
+    if (!pot_from_cfg) {
+        spdlog::warn(
+            "read_sim_file: no 'pot' in config; assuming each of the {} processed events is one "
+            "proton on target. Set 'pot' for particle-gun and other non-PoT samples.",
+            *pot_from_file);
+    }
+
+    double const pot_sim = pot_from_cfg ? *pot_from_cfg : *pot_from_file;
+    if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill)) {
+        throw std::invalid_argument(std::format(
+            "read_sim_file: pot must be a finite value in [1, nominal_pot_per_spill = {:g}]",
+            nominal_pot_per_spill));
+    }
+    double const high_time =
+        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
+    // Event numbers run over the events aegir processed; that's only the PoT
+    // count for PoT-based samples (for a particle gun the config pot just sets
+    // how much spill time the events are spread over).
+    auto const n_events =
+        static_cast<std::uint64_t>(std::llround(pot_from_file ? *pot_from_file : pot_sim));
+
     auto particle_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimParticle>>>(
         particle_reader->GetView<std::vector<SHiP::SimParticle>>(particles_field));
 
@@ -182,7 +232,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
                                   ROOT::kInvalidDescriptorId;
 
     // Note this is a separate seed than the one used for the smearing in the detector digitisations
-    auto const time_seed = static_cast<std::uint32_t>(config.get<int>("time_seed", 0));
+    auto const time_seed = resolve_time_seed(config);
 
     m.provide(
          "read_rntuple",
@@ -209,10 +259,6 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     m.provide(
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
-    if (time_gen_mode != "approximate" && time_gen_mode != "exact") {
-        throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +
-                                    time_gen_mode);
-    }
 
     // Without event numbers there is nothing to order the times by, so fall
     // back to uniform times seeded from the entry index.
@@ -224,7 +270,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
              "provide_time",
              [time_seed, high_time](data_cell_index const& id) -> double {
                  SHiP::random::PhiloxRng rng{time_seed, time_offset_stream, id.number()};
-                 return rng.uniform(0.0, high_time);
+                 return rng.uniform53(0.0, high_time);
              },
              concurrency::unlimited)
             .output_product("rntuple_source", "time", layer);
@@ -241,7 +287,9 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
                                std::move(evt_number_reader), std::move(evt_number_view), layer);
     } else {
         register_time_provider(
-            m, std::make_shared<sorted_random>(time_seed, time_offset_stream, high_time, n_events),
+            m,
+            std::make_shared<sorted_random>(time_seed, time_offset_stream, high_time, n_events,
+                                            max_group_size, time_cache_depth),
             std::move(evt_number_reader), std::move(evt_number_view), layer);
     }
 }

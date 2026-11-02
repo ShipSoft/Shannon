@@ -1,9 +1,10 @@
 #pragma once
+
 // SPDX-FileCopyrightText: 2026 CERN for the benefit of the SHiP Collaboration
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// read_sim_file.cpp — Phlex source plugin
+// approx_sorted_random.hpp
 //
 // This is a tool to generate random numbers approximately in order.
 // It does so by sampling from an approximate beta distribution.
