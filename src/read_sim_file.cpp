@@ -11,20 +11,121 @@
 #include "phlex/model/data_cell_index.hpp"
 #include "phlex/module.hpp"
 #include "phlex/source.hpp"
+#include "utilities/approx_sorted_random.hpp"
+#include "utilities/sorted_random.hpp"
 
 #include <ROOT/RNTupleReader.hxx>
 #include <ROOT/RNTupleView.hxx>
 #include <TFile.h>
+#include <TObjString.h>
 
 #include <SHiP/SimHit.hpp>
 #include <SHiP/SimParticle.hpp>
+#include <SHiP/random/philox_rng.hpp>
+#include <boost/json.hpp>
+#include <cmath>
+#include <concepts>
+#include <cstdint>
+#include <format>
+#include <limits>
 #include <memory>
+#include <optional>
+#include <random>
+#include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace phlex;
 using namespace phlex::experimental::literals;
+constexpr std::uint32_t time_offset_stream = 0x71BD91A0;
+
+namespace {
+template <typename T>
+concept TimeGenerator = requires(T& g, std::uint64_t n) {
+    { g.next(n) } -> std::convertible_to<double>;
+};
+
+template <TimeGenerator TimeGen>
+void register_time_provider(auto& m, std::shared_ptr<TimeGen> gen,
+                            std::shared_ptr<ROOT::RNTupleReader> reader,
+                            std::shared_ptr<ROOT::RNTupleView<std::uint64_t>> view,
+                            phlex::experimental::identifier const& layer) {
+    // Provide a random time.
+    m.provide(
+         "provide_time",
+         [gen = std::move(gen), reader = std::move(reader),
+          view = std::move(view)](data_cell_index const& id) -> double {
+             auto const entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
+             return gen->next((*view)(entry_index));
+         },
+         concurrency::serial)
+        .output_product("rntuple_source", "time", layer);
+}
+
+std::optional<double> read_pot_from_summary(std::string const& filename) {
+    std::unique_ptr<TFile> file{TFile::Open(filename.c_str(), "READ")};
+    if (!file || file->IsZombie()) {
+        throw std::runtime_error("cannot open " + filename);
+    }
+
+    const auto* json = file->Get<TObjString>("file_summary");
+    if (!json) {
+        return std::nullopt;  // older aegir file, no summary
+    }
+
+    auto const summary = boost::json::parse(json->GetString().Data()).as_object();
+    if (summary.at("schema_version").to_number<int>() != 1) {
+        throw std::runtime_error("unsupported file_summary schema_version");
+    }
+
+    auto const n_processed = summary.at("n_events_processed").to_number<std::uint64_t>();
+    auto const n_written = summary.at("n_events_written").to_number<std::uint64_t>();
+    // null when no event was written.
+    auto const& max_id_value = summary.at("max_event_number_saved");
+    auto const max_id = max_id_value.is_null()
+                            ? std::nullopt
+                            : std::optional{max_id_value.to_number<std::int64_t>()};
+
+    // Written can equal generated when nothing was filtered.
+    if (n_written > n_processed) {
+        throw std::runtime_error("file_summary: n_events_written (" + std::to_string(n_written) +
+                                 ") exceeds n_events_processed (" + std::to_string(n_processed) +
+                                 ")");
+    }
+    // Event ids are 0-based, so the largest valid id is n_processed - 1.
+    if (max_id && std::cmp_greater_equal(*max_id, n_processed)) {
+        throw std::runtime_error("file_summary: max_event_number_saved (" +
+                                 std::to_string(*max_id) + ") is not below n_events_processed (" +
+                                 std::to_string(n_processed) + ")");
+    }
+
+    return static_cast<double>(n_processed);
+}
+
+// Reproducibility is opt-in, as in aegir: without a configured time_seed, draw
+// one so independent jobs get independent times, and log it so any run can
+// still be reproduced.
+std::uint32_t resolve_time_seed(phlex::configuration const& config) {
+    auto const configured = config.get_if_present<std::int64_t>("time_seed");
+    if (configured && (*configured < 0 ||
+                       std::cmp_greater(*configured, std::numeric_limits<std::uint32_t>::max()))) {
+        throw std::invalid_argument("read_sim_file: time_seed " + std::to_string(*configured) +
+                                    " is outside the valid range [0, 4294967295]");
+    }
+    if (configured) {
+        return static_cast<std::uint32_t>(*configured);
+    }
+    auto const seed = static_cast<std::uint32_t>(std::random_device{}());
+    spdlog::info(
+        "read_sim_file: no time_seed configured; drew {}. Set 'time_seed: {}' to reproduce this "
+        "run",
+        seed, seed);
+    return seed;
+}
+
+}  // namespace
 
 PHLEX_REGISTER_PROVIDERS(m, config) {
     auto const input_file = config.get<std::string>("input_file");
@@ -33,6 +134,22 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         config.get<std::string>("particles_field", std::string{"sim_particles"});
     auto const hits_field = config.get<std::string>("hits_field", std::string{"sim_hits"});
     auto const layer = phlex::experimental::identifier{config.get<std::string>("layer")};
+    double const spill_time_ns = 1.2e9;         // Total length of a spill in ns
+    double const nominal_pot_per_spill = 4e13;  // PoT per spill
+
+    auto const time_gen_mode =
+        config.get<std::string>("time_generator", std::string{"approximate"});
+
+    if (time_gen_mode != "approximate" && time_gen_mode != "exact") {
+        throw std::invalid_argument("time_generator must be 'approximate' or 'exact'. You put: " +
+                                    time_gen_mode);
+    }
+    // This is an option for the exact generator to set the cache depth. Only change if you know
+    // what you are doing
+    auto const time_cache_depth = config.get<int>("time_cache_depth", 10);
+    // This is an option for the exact generator to set the max size of the group before switching
+    // to uniform sample. Only change if you know what you are doing
+    auto const max_group_size = config.get<int>("max_group_size", 1000);
 
     // Open the file through TFile once so ROOT learns the class layouts stored
     // in it. Without them, ROOT 6.40.04 aborts in RFieldMeta when data-model's
@@ -53,6 +170,54 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     // that can run concurrently, and RNTupleReader is not thread-safe.
     std::shared_ptr<ROOT::RNTupleReader> particle_reader =
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
+
+    // Check before the pot logic, which would otherwise report n_events_processed = 0
+    // as a bad pot value. Providers index entries directly, so an empty ntuple
+    // can't be digitised.
+    if (particle_reader->GetNEntries() == 0) {
+        throw std::runtime_error(
+            std::format("read_sim_file: '{}' has no entries in ntuple '{}'; nothing to digitise",
+                        input_file, ntuple_name));
+    }
+
+    // First try and get some useful numbers out of the input file and the config
+    auto const pot_from_file = read_pot_from_summary(input_file);
+    auto const pot_from_cfg = config.get_if_present<double>("pot");
+    if (!pot_from_file && !pot_from_cfg) {
+        throw std::invalid_argument("no file_summary in input and no 'pot' in config");
+    }
+
+    // Config takes precedence for the simulated time, but a warning just in case
+    if (pot_from_file && pot_from_cfg && *pot_from_file != *pot_from_cfg) {
+        spdlog::warn(
+            "read_sim_file: config pot ({}) disagrees with file_summary of '{}' ({}); "
+            "using config for the simulated time, file_summary for the number of events",
+            *pot_from_cfg, input_file, *pot_from_file);
+    }
+
+    // file_summary doesn't say what kind of source made the sample, so a
+    // particle-gun file without a config pot can't be told apart from a PoT one.
+    if (!pot_from_cfg) {
+        spdlog::warn(
+            "read_sim_file: no 'pot' in config; assuming each of the {} processed events is one "
+            "proton on target. Set 'pot' for particle-gun and other non-PoT samples.",
+            *pot_from_file);
+    }
+
+    double const pot_sim = pot_from_cfg ? *pot_from_cfg : *pot_from_file;
+    if (!(pot_sim >= 1.0 && pot_sim <= nominal_pot_per_spill)) {
+        throw std::invalid_argument(std::format(
+            "read_sim_file: pot must be a finite value in [1, nominal_pot_per_spill = {:g}]",
+            nominal_pot_per_spill));
+    }
+    double const high_time =
+        spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
+    // Event numbers run over the events aegir processed; that's only the PoT
+    // count for PoT-based samples (for a particle gun the config pot just sets
+    // how much spill time the events are spread over).
+    auto const n_events =
+        static_cast<std::uint64_t>(std::llround(pot_from_file ? *pot_from_file : pot_sim));
+
     auto particle_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimParticle>>>(
         particle_reader->GetView<std::vector<SHiP::SimParticle>>(particles_field));
 
@@ -60,6 +225,14 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
         ROOT::RNTupleReader::Open(ntuple_name, input_file);
     auto hit_view = std::make_shared<ROOT::RNTupleView<std::vector<SHiP::SimHit>>>(
         hit_reader->GetView<std::vector<SHiP::SimHit>>(hits_field));
+
+    std::shared_ptr<ROOT::RNTupleReader> evt_number_reader =
+        ROOT::RNTupleReader::Open(ntuple_name, input_file);
+    bool const has_event_number = evt_number_reader->GetDescriptor().FindFieldId("event_number") !=
+                                  ROOT::kInvalidDescriptorId;
+
+    // Note this is a separate seed than the one used for the smearing in the detector digitisations
+    auto const time_seed = resolve_time_seed(config);
 
     m.provide(
          "read_rntuple",
@@ -86,4 +259,37 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
     m.provide(
          "provide_id", [](data_cell_index const& id) { return id; }, concurrency::unlimited)
         .output_product("rntuple_source", "id", layer);
+
+    // Without event numbers there is nothing to order the times by, so fall
+    // back to uniform times seeded from the entry index.
+    if (!has_event_number) {
+        spdlog::warn(
+            "read_sim_file: no 'event_number' field in '{}'; assigning uniform random times",
+            input_file);
+        m.provide(
+             "provide_time",
+             [time_seed, high_time](data_cell_index const& id) -> double {
+                 SHiP::random::PhiloxRng rng{time_seed, time_offset_stream, id.number()};
+                 return rng.uniform53(0.0, high_time);
+             },
+             concurrency::unlimited)
+            .output_product("rntuple_source", "time", layer);
+        return;
+    }
+
+    auto evt_number_view = std::make_shared<ROOT::RNTupleView<std::uint64_t>>(
+        evt_number_reader->GetView<std::uint64_t>("event_number"));
+
+    if (time_gen_mode == "approximate") {
+        register_time_provider(m,
+                               std::make_shared<approx_sorted_random>(time_seed, time_offset_stream,
+                                                                      high_time, n_events),
+                               std::move(evt_number_reader), std::move(evt_number_view), layer);
+    } else {
+        register_time_provider(
+            m,
+            std::make_shared<sorted_random>(time_seed, time_offset_stream, high_time, n_events,
+                                            max_group_size, time_cache_depth),
+            std::move(evt_number_reader), std::move(evt_number_view), layer);
+    }
 }

@@ -18,6 +18,7 @@ find_package(SHiPRandom 0.4 REQUIRED)
 if(POLICY CMP0167)
     cmake_policy(SET CMP0167 NEW) # use BoostConfig.cmake, not the removed FindBoost
 endif()
+find_package(Boost REQUIRED COMPONENTS json)
 find_package(spdlog REQUIRED)
 find_package(phlex 0.4.1 REQUIRED)
 find_package(
@@ -31,9 +32,19 @@ configure_file(ShannonConfig.h.in ShannonConfig.h)
 
 # Sim file reader plugin
 add_library(read_sim_file MODULE src/read_sim_file.cpp)
+target_include_directories(
+    read_sim_file
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src"
+)
 target_link_libraries(
     read_sim_file
-    PRIVATE phlex::module SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple
+    PRIVATE
+        phlex::module
+        SHiP::DataModel
+        SHiP::Random
+        ROOT::RIO
+        ROOT::ROOTNTuple
+        Boost::json
 )
 
 # Digitisation plugin
@@ -62,6 +73,13 @@ target_link_libraries(
         spdlog::spdlog
 )
 
+# Driver plugin: one "spill" data cell per entry of the input RNTuple
+add_library(rntuple_entries_driver MODULE src/rntuple_entries_driver.cpp)
+target_link_libraries(
+    rntuple_entries_driver
+    PRIVATE phlex::module ROOT::ROOTNTuple spdlog::spdlog
+)
+
 # Smoke-test input generator (build-only, not installed)
 add_executable(make_test_input tools/make_test_input.cpp)
 target_include_directories(
@@ -70,13 +88,18 @@ target_include_directories(
 )
 target_link_libraries(
     make_test_input
-    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random
+    PRIVATE SHiP::DataModel ROOT::RIO ROOT::ROOTNTuple SHiP::Random Boost::json
 )
 
 # Install
 include(GNUInstallDirs)
 
-set(PLUGIN_TARGETS read_sim_file digitise_hits digitised_output_module)
+set(PLUGIN_TARGETS
+    read_sim_file
+    digitise_hits
+    digitised_output_module
+    rntuple_entries_driver
+)
 
 install(TARGETS ${PLUGIN_TARGETS} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY workflows/ DESTINATION share/shannon/workflows)
