@@ -13,9 +13,11 @@
 #include "phlex/model/fixed_hierarchy.hpp"
 
 #include <ROOT/RNTupleReader.hxx>
+#include <TFile.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <spdlog/spdlog.h>
 #include <stdexcept>
 #include <string>
@@ -25,6 +27,13 @@ PHLEX_REGISTER_DRIVER(d, config) {
     auto const input_file = config.get<std::string>("input_file");
     auto const ntuple_name = config.get<std::string>("ntuple_name");
     auto const layer = config.get<std::string>("layer", std::string{"spill"});
+
+    {
+        std::unique_ptr<TFile> const file{TFile::Open(input_file.c_str())};
+        if (!file || file->IsZombie()) {
+            throw std::runtime_error("rntuple_entries_driver: cannot open '" + input_file + "'");
+        }
+    }
 
     std::size_t n_events = ROOT::RNTupleReader::Open(ntuple_name, input_file)->GetNEntries();
     spdlog::info("rntuple_entries_driver: '{}' has {} entries", input_file, n_events);
