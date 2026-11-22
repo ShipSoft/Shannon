@@ -65,7 +65,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          "read_rntuple",
          [reader = std::move(particle_reader), view = std::move(particle_view)](
              data_cell_index const& id) -> std::vector<SHiP::SimParticle> {
-             auto entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
+             auto const entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
              return (*view)(entry_index);
          },
          concurrency::serial)
@@ -75,7 +75,7 @@ PHLEX_REGISTER_PROVIDERS(m, config) {
          "read_rntuple_hits",
          [reader = std::move(hit_reader),
           view = std::move(hit_view)](data_cell_index const& id) -> std::vector<SHiP::SimHit> {
-             auto entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
+             auto const entry_index = static_cast<ROOT::NTupleSize_t>(id.number());
              return (*view)(entry_index);
          },
          concurrency::serial)

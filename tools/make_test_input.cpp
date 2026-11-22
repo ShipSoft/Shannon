@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     }
 
     auto model = ROOT::RNTupleModel::Create();
-    auto particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
-    auto hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
+    auto const particles = model->MakeField<std::vector<SHiP::SimParticle>>("sim_particles");
+    auto const hits = model->MakeField<std::vector<SHiP::SimHit>>("sim_hits");
     auto writer = ROOT::RNTupleWriter::Recreate(std::move(model), "events", filename);
 
     constexpr SHiP::detector_id detectors[] = {
