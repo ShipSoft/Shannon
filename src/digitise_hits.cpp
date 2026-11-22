@@ -108,8 +108,9 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     double const spill_time_ns = 1.2e9;                      // Total length of a spill in ns
     double const nominal_pot_per_spill = 4e13;               // PoT per spill
 
-    if (pot_sim > nominal_pot_per_spill)
+    if (pot_sim > nominal_pot_per_spill) {
         throw std::runtime_error("Provided simulated PoT is greater than a single spill");
+    }
 
     double const high_time =
         spill_time_ns * pot_sim / nominal_pot_per_spill;  // Length of time simulated
@@ -120,7 +121,7 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
                                                     std::vector<::SHiP::SimHit> const& sim_hits) {
              SHiP::random::PhiloxRng time_rng{seed, time_offset_stream,
                                               static_cast<std::uint32_t>(id.number())};
-             double event_time_offset = time_rng.uniform53(0.0, high_time);
+             double const event_time_offset = time_rng.uniform53(0.0, high_time);
              SHiP::random::PhiloxRng rng{seed, digitise_stream,
                                          static_cast<std::uint32_t>(id.number())};
              return digitiser(sim_hits, event_time_offset, rng);

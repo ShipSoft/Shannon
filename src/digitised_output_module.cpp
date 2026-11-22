@@ -91,7 +91,7 @@ class TypedHitWriter {
         auto model = ROOT::RNTupleModel::CreateBare();
         model->MakeField<Hit>("hit");
 
-        std::scoped_lock lock{file_service_.mutex()};
+        std::scoped_lock const lock{file_service_.mutex()};
 
         writer_ = ROOT::RNTupleParallelWriter::Append(std::move(model), ntuple_name,
                                                       file_service_.file());
@@ -113,7 +113,7 @@ class TypedHitWriter {
         if (status.ShouldFlushCluster()) {
             state.context->FlushColumns();
 
-            std::scoped_lock lock{file_service_.mutex()};
+            std::scoped_lock const lock{file_service_.mutex()};
             state.context->FlushCluster();
         }
     }
@@ -267,7 +267,7 @@ class DigiHistogrammer {
             ctxs.sim_particle_vtx_z = f_sim_particle_vtx_z_.CreateFillContext();
         }
 
-        auto observe_hits = [&ctxs](auto const& hits, ContextD& multiplicity) {
+        auto const observe_hits = [&ctxs](auto const& hits, ContextD& multiplicity) {
             multiplicity.Fill(static_cast<double>(hits.size()));
             using HitT = std::remove_cvref_t<decltype(*std::begin(hits))>;
             for (auto const& hit : hits) {
@@ -304,7 +304,7 @@ class DigiHistogrammer {
         fill_contexts_.clear();
         try {
             auto file = RFile::Recreate(filename_);
-            auto put = [&](char const* name, char const* title, HistD const& h) {
+            auto const put = [&](char const* name, char const* title, HistD const& h) {
                 auto th1 = ROOT::Experimental::Hist::ConvertToTH1D(h);
                 th1->SetNameTitle(name, title);
                 file->Put(name, *th1);
@@ -390,26 +390,30 @@ class DigiNoop {
 PHLEX_REGISTER_ALGORITHMS(m, config) {
     using namespace phlex;
 
-    auto mode = config.get<std::string>("mode", std::string{"digi"});
-    auto rntuple_file = config.get<std::string>("rntuple_file", std::string{"digitised_hits.root"});
-    auto histo_file = config.get<std::string>("histo_file", std::string{"digi_validation.root"});
+    auto const mode = config.get<std::string>("mode", std::string{"digi"});
+    auto const rntuple_file =
+        config.get<std::string>("rntuple_file", std::string{"digitised_hits.root"});
+    auto const histo_file =
+        config.get<std::string>("histo_file", std::string{"digi_validation.root"});
     auto const creator = phlex::experimental::identifier{
         config.get<std::string>("creator", std::string{"digitise_hits"})};
     auto const layer =
         phlex::experimental::identifier{config.get<std::string>("layer", std::string{"spill"})};
 
-    if (mode != "digi" && mode != "noop")
+    if (mode != "digi" && mode != "noop") {
         throw std::runtime_error("Unknown digitised_output_module mode: '" + mode +
                                  "' (expected 'digi' or 'noop')");
+    }
 
     // Recreating the histogram file at teardown would truncate the RNTuple
     // output if both are configured to the same path.
     if (std::filesystem::weakly_canonical(rntuple_file) ==
-        std::filesystem::weakly_canonical(histo_file))
+        std::filesystem::weakly_canonical(histo_file)) {
         throw std::runtime_error(
             "digitised_output_module: rntuple_file and histo_file must "
             "differ (both resolve to '" +
             rntuple_file + "')");
+    }
 
     auto selector = [&creator, &layer](char const* suffix) {
         return product_selector{
@@ -423,7 +427,7 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     };
 
     // Positional: must match the parameter order of the observe() overloads.
-    auto hit_selectors = [&selector, &passthrough, &layer](auto& registered) {
+    auto const hit_selectors = [&selector, &passthrough, &layer](auto& registered) {
         registered.input_family(selector("ubt_hits"), selector("sbt_hits"),
                                 selector("straw_tubes_hits"), selector("calorimeter_hits"),
                                 selector("timing_detector_hits"), passthrough("sim_hits"),
@@ -431,13 +435,13 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
     };
 
     if (mode == "noop") {
-        auto noop = m.make<DigiNoop>();
+        auto const noop = m.make<DigiNoop>();
         auto registered = noop.observe("noop", &DigiNoop::observe, concurrency::unlimited);
         hit_selectors(registered);
         return;
     }
 
-    auto writer = m.make<HitRNTupleWriter>(rntuple_file);
+    auto const writer = m.make<HitRNTupleWriter>(rntuple_file);
 
     writer.observe("write_calo_hits", &HitRNTupleWriter::write_calo, concurrency::unlimited)
         .input_family(selector("calorimeter_hits"));
@@ -462,7 +466,7 @@ PHLEX_REGISTER_ALGORITHMS(m, config) {
                  concurrency::unlimited)
         .input_family(passthrough("sim_particles"));
 
-    auto histogrammer = m.make<DigiHistogrammer>(histo_file);
+    auto const histogrammer = m.make<DigiHistogrammer>(histo_file);
     auto registered_histogrammer =
         histogrammer.observe("validate", &DigiHistogrammer::observe, concurrency::unlimited);
     hit_selectors(registered_histogrammer);
