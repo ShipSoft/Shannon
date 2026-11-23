@@ -13,6 +13,7 @@
       input_file: 'smoke_input.root',
       ntuple_name: 'events',
       layer: 'spill',
+      time_seed: 42,
     },
   },
 
