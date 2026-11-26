@@ -23,6 +23,7 @@
 #include <ROOT/RNTupleFillStatus.hxx>
 #include <ROOT/RNTupleModel.hxx>
 #include <ROOT/RNTupleParallelWriter.hxx>
+#include <ROOT/RVersion.hxx>
 #include <type_traits>
 
 #include <SHiP/SimHit.hpp>
@@ -51,7 +52,11 @@ namespace {
 using ROOT::REntry;
 using ROOT::RNTupleModel;
 using ROOT::RNTupleParallelWriter;
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6, 42, 0)
+using ROOT::RFile;
+#else
 using ROOT::Experimental::RFile;
+#endif
 using ROOT::Experimental::RHist;
 using ROOT::Experimental::RHistConcurrentFiller;
 using ROOT::Experimental::RHistFillContext;
