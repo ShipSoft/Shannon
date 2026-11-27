@@ -47,12 +47,16 @@ cxx-compiler = "*"
 # drift from them. clang-tools provides clang-tidy but does not depend on the
 # clang package that ships clang's own builtin headers (stddef.h and friends),
 # and without those every translation unit fails to parse.
-# Both carry the >=19 floor that .clang-tidy's ExcludeHeaderFilterRegex needs,
-# and they have to resolve to the same major: clang-tidy looks for its builtin
-# headers under lib/clang/<major>/include, which is what the clang package
-# supplies. Both come from the same llvm feedstock, so conda keeps them in step.
-clang = ">=19"
-clang-tools = ">=19"
+# Both carry a >=20 floor: .clang-tidy's ExcludeHeaderFilterRegex needs 19,
+# and the clang-tidy-diff task's -only-check-in-db needs 20. They have to
+# resolve to the same major: clang-tidy looks for its builtin headers under
+# lib/clang/<major>/include, which is what the clang package supplies.
+# Nothing in the package metadata enforces this. Both are built by the same
+# feedstock and published together, so the solver picks the same major for
+# each unless another dependency caps one of them. Check the pixi.lock diff
+# for a split when relocking.
+clang = ">=20"
+clang-tools = ">=20"
 
 # shipdatamodel as its released conda build (prefix.dev/ship-experiment/stable).
 # Held in a feature that every environment pulls in, deliberately NOT in the
