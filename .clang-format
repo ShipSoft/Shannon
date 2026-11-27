@@ -18,9 +18,6 @@ IncludeCategories:
   # Local headers
   - Regex: '^"'
     Priority: 1
-  # Geant4 headers
-  - Regex: '^<G4'
-    Priority: 3
   # ROOT headers
   - Regex: '^<(T[A-Z]|ROOT/|RN)'
     Priority: 4

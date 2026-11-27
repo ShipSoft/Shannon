@@ -16,10 +16,8 @@ requires-pixi = ">=0.68"
 # shipdatamodel is declared in [feature.released] below, not here, so the dev
 # environment can swap it for a sibling source build without this channel
 # spec in scope.
-shipgeometryservice = "*"
 phlex = ">=0.4.1"
 root = ">=6.36"
-pythia8 = ">=8.3"
 random123 = "*"
 # SHiP::random::PhiloxRng, the per-spill digitisation RNG.
 # ship-random accepts only the requested minor in find_package (SameMinorVersion),
